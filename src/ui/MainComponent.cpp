@@ -41,7 +41,7 @@ MainComponent::MainComponent (juce::ApplicationProperties& props) : properties (
 
     // top bar
     topBar.onPlaySong = [this] { playSong (false); };
-    topBar.onRewind = [this] { playSong (true); };
+    topBar.onRewind = [this] { rewindToStart(); };
     topBar.onPlayPattern = [this] { playPattern(); };
     topBar.onStop = [this] { stopPlayback(); };
     topBar.onUndo = [this] { ctx.undo.undo(); trackArea.grid.repaint(); };
@@ -370,6 +370,18 @@ void MainComponent::playSong (bool fromStart)
     topBar.updateState();
 }
 
+void MainComponent::rewindToStart()
+{
+    // move to the start of the song; only keeps playing if it was already playing
+    const bool wasPlaying = engine.isPlaying();
+    const bool looping = engine.isLoopingPattern();
+    sequenceList.selectSlot (0);
+    trackArea.grid.setCursor (ctx.state.cursorTrack, ctx.state.cursorColumn, ctx.state.cursorField, 0);
+    if (wasPlaying)
+        engine.play (0, 0, looping);
+    topBar.updateState();
+}
+
 void MainComponent::playPattern()
 {
     engine.play (ctx.state.seqSlot, 0, true);
@@ -406,7 +418,7 @@ namespace MenuIds
         mi_newProject = 1, mi_openProject, mi_saveProject, mi_saveProjectAs, mi_importAudio, mi_exportAudio, mi_quit,
         mi_demoSong, mi_jazzSong, mi_clearRecent,
         mi_undo = 100, mi_redo, mi_cut, mi_copy, mi_paste, mi_del, mi_selectTrack, mi_transposeUp, mi_transposeDown, mi_octaveUp, mi_octaveDown, mi_interpolate, mi_editMode,
-        mi_playSong = 200, mi_playFromStart, mi_playPattern, mi_stop, mi_addTrack, mi_renameSong, mi_followPlayback,
+        mi_playSong = 200, mi_playFromStart, mi_rewind, mi_playPattern, mi_stop, mi_addTrack, mi_renameSong, mi_followPlayback,
         mi_toggleMixer = 300, mi_collapseFx,
         mi_pluginManager = 400,
         mi_audioSettings = 500, mi_defaultSoundFont,
@@ -493,6 +505,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int index, const juce::String&)
         case 2:
             item (mi_playSong, "Play Song", "Space");
             item (mi_playFromStart, "Play From Start");
+            item (mi_rewind, "Go to Start");
             item (mi_playPattern, "Loop Pattern", "Shift+Space");
             item (mi_stop, "Stop", "Space", engine.isPlaying());
             m.addSeparator();
@@ -565,6 +578,7 @@ void MainComponent::menuItemSelected (int id, int)
 
         case mi_playSong:       playSong (false); break;
         case mi_playFromStart:  playSong (true); break;
+        case mi_rewind:      rewindToStart(); break;
         case mi_playPattern:    playPattern(); break;
         case mi_stop:           stopPlayback(); break;
         case mi_followPlayback: ctx.state.followPlayback = ! ctx.state.followPlayback; ctx.state.changed(); break;

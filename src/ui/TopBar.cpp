@@ -90,7 +90,7 @@ TopBar::TopBar (AppContext& c) : ctx (c)
     loopButton.onFill = Theme::accentBlue;
     followButton.onFill = Theme::accentBlue;
 
-    rewindButton.setTooltip ("Play song from the start");
+    rewindButton.setTooltip ("Go to the start of the song (does not start playback)");
     playButton.setTooltip ("Play song from the selected sequence slot (Space)");
     loopButton.setTooltip ("Loop the current pattern (Shift+Space)");
     stopButton.setTooltip ("Stop");

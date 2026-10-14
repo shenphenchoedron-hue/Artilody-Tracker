@@ -42,6 +42,7 @@ public:
     void playSong (bool fromStart);
     void playPattern();
     void stopPlayback();
+    void rewindToStart();
     void loadFile (const juce::File&);
     bool renderTo (const juce::File&);
     bool roundTripTest (const juce::File&);
