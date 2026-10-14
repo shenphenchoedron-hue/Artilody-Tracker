@@ -2,6 +2,14 @@
 
 Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channel strip lige under sig.
 
+### Nyt i 1.0.3
+- Projekter gemmes nu som **`.artixml`**, så det er tydeligt, at filen er almindelig XML. Ældre `.artilody`-filer
+  kan stadig åbnes og gemmes som `.artixml`.
+- `.artixml` er tilknyttet programmet på Windows og macOS (dobbeltklik åbner projektet).
+- Ny brugermanual på dansk og engelsk (`Manual-da.md` / `Manual-en.md`) med et appendiks, der beskriver
+  `.artixml`-formatet. Manualerne følger med i alle pakker.
+- Rettet hjælpeteksten for oktavskift (F1 = ned, F2 = op).
+
 ### Nyt i 1.0.2
 - **macOS:** Rettet skrattende/hakkende lyd under afspilning. Pattern-griddet holdt mixerens lås, mens det blev
   tegnet, så lydtråden måtte vente på tegningen ved hver ny linje. Griddet, undo og gem holder ikke længere låsen,
@@ -34,5 +42,5 @@ Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channe
 - Panorering, lydstyrke, mute og solo
 - Menulinje med File / Edit / Song / View / Plug-ins / Options / Help
 - Åbn lydfiler (WAV/AIFF/FLAC/OGG/MP3) som sampler-instrument, eksport til WAV/AIFF/FLAC
-- MIDI-keyboard input, projekter (.artilody) og seneste projekter
+- MIDI-keyboard input, projekter (.artixml – almindelig XML) og seneste projekter
 - Demo-sange: *Sunrise Circuits* og jazznummeret *Blue Corner Swing*

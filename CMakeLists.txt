@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(ArtilodyTracker VERSION 1.0.2 LANGUAGES C CXX)
+project(ArtilodyTracker VERSION 1.0.3 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,6 +23,7 @@ juce_add_gui_app(ArtilodyTracker
     BUNDLE_ID "com.artilody.tracker"
     VERSION ${PROJECT_VERSION}
     ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon.png"
+    DOCUMENT_EXTENSIONS artixml artilody
     MICROPHONE_PERMISSION_ENABLED TRUE
     MICROPHONE_PERMISSION_TEXT "Artilody Tracker uses audio input for plug-ins that process live audio.")
 
@@ -110,7 +111,7 @@ if(UNIX AND NOT APPLE)
     install(FILES packaging/linux/artilody-tracker.desktop DESTINATION share/applications COMPONENT app)
     install(FILES packaging/linux/icon-256.png DESTINATION share/icons/hicolor/256x256/apps RENAME artilody-tracker.png COMPONENT app)
     install(FILES packaging/linux/icon-512.png DESTINATION share/icons/hicolor/512x512/apps RENAME artilody-tracker.png COMPONENT app)
-    install(FILES LICENSE THIRD_PARTY_LICENSES.md DESTINATION share/doc/artilody-tracker COMPONENT app)
+    install(FILES LICENSE THIRD_PARTY_LICENSES.md docs/Manual-da.md docs/Manual-en.md DESTINATION share/doc/artilody-tracker COMPONENT app)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/soundfonts/GeneralUser-GS.sf2")
         install(FILES soundfonts/GeneralUser-GS.sf2 DESTINATION share/artilody-tracker/soundfonts COMPONENT app)
     endif()

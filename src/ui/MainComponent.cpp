@@ -646,7 +646,8 @@ void MainComponent::showKeyboardHelp()
       << "Ctrl+C / X / V\tCopy, cut, paste\n"
       << "Ctrl+Z / Y\tUndo / redo\n"
       << "Ctrl+Up / Down (+Shift)\tTranspose semitone (octave)\n"
-      << "Num * / Num /, F1 / F2\tOctave up / down\n"
+      << "Num * / F2\tOctave up\n"
+      << "Num / / F1\tOctave down\n"
       << "Ctrl+N / O / S / E / I\tNew, open, save, export audio, open audio file\n"
       << "Ctrl+T / M / P\tAdd track, mixer, plug-in manager\n\n"
       << "Effects: Txx tempo, Lxx lines per beat, Dxx delay, Cxx cut,\n"
@@ -750,11 +751,20 @@ void MainComponent::loadFile (const juce::File& f)
     structureChanged();
 }
 
+void MainComponent::openFileFromSystem (const juce::File& f)
+{
+    if (! f.existsAsFile() || ! ProjectIO::isProjectFile (f))
+        return;
+    if (! ctx.state.dirty) { loadFile (f); return; }
+    juce::AlertWindow::showOkCancelBox (juce::MessageBoxIconType::QuestionIcon, "Open project", "Discard unsaved changes?", "Discard", "Cancel", nullptr,
+                                        juce::ModalCallbackFunction::create ([this, f] (int r) { if (r != 0) loadFile (f); }));
+}
+
 void MainComponent::openProject()
 {
     auto doOpen = [this]
     {
-        chooser = std::make_unique<juce::FileChooser> ("Open project", lastDirectory, juce::String ("*") + ProjectIO::fileExtension);
+        chooser = std::make_unique<juce::FileChooser> ("Open project", lastDirectory, ProjectIO::openWildcard);
         chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles, [this] (const juce::FileChooser& fc)
         {
             auto f = fc.getResult();
@@ -772,6 +782,8 @@ void MainComponent::saveProject (bool saveAs, std::function<void (bool)> done)
     auto writeTo = [this, done] (juce::File f)
     {
         if (f == juce::File()) { if (done) done (false); return; }
+        // Always write .artixml - a project opened from an old .artilody file is saved
+        // as a new .artixml file next to it (the old file is left untouched).
         f = f.withFileExtension (ProjectIO::fileExtension);
         juce::String err;
         if (! ProjectIO::save (engine, f, err))
@@ -853,7 +865,7 @@ bool MainComponent::roundTripTest (const juce::File& f)
     if (! ProjectIO::save (engine, f, err)) return false;
     const auto first = f.loadFileAsString();
     if (! ProjectIO::load (engine, f, err)) return false;
-    auto second = f.getSiblingFile ("roundtrip2.artilody");
+    auto second = f.getSiblingFile (juce::String ("roundtrip2") + ProjectIO::fileExtension);
     if (! ProjectIO::save (engine, second, err)) return false;
     return first == second.loadFileAsString();
 }

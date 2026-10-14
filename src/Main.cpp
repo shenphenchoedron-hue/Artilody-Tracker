@@ -164,7 +164,13 @@ public:
         return allOk;
     }
 
-    void anotherInstanceStarted (const juce::String&) override {}
+    /** On macOS, files opened from Finder (double-click, drag onto the Dock icon) arrive here. */
+    void anotherInstanceStarted (const juce::String& commandLine) override
+    {
+        auto file = juce::File::getCurrentWorkingDirectory().getChildFile (commandLine.unquoted().trim());
+        if (mainWindow != nullptr && commandLine.isNotEmpty() && file.existsAsFile())
+            mainWindow->openFileFromSystem (file);
+    }
 
     class MainWindow final : public juce::DocumentWindow
     {
@@ -206,6 +212,11 @@ public:
         void openFile (const juce::File& f)
         {
             content->loadFile (f);
+        }
+
+        void openFileFromSystem (const juce::File& f)
+        {
+            content->openFileFromSystem (f);
         }
 
         bool renderTo (const juce::File& f) { return content->renderTo (f); }

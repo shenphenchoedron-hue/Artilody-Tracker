@@ -34,10 +34,17 @@ oprettes der automatisk en channel strip **lige under tracket**, som styrer det.
 5. **Lydstyrke** (fader med meter), mute og solo
 
 Appen har en almindelig menulinje (File, Edit, Song, View, Plug-ins, Options, Help).
-Projekter gemmes som `.artilody` (inkl. plug-in-tilstand), sange kan eksporteres som WAV, AIFF eller FLAC,
+Projekter gemmes som `.artixml` – almindelig XML, inkl. plug-in-tilstand (ældre `.artilody`-filer kan stadig åbnes), sange kan eksporteres som WAV, AIFF eller FLAC,
 og en lydfil (WAV/AIFF/FLAC/OGG/MP3) kan åbnes som sampler-instrument på det valgte track.
 
 ![Mixer collapsed](docs/screenshot-mixer-collapsed.png)
+
+## Brugermanual
+
+- [Dansk brugermanual](docs/Manual-da.md)
+- [English user manual](docs/Manual-en.md)
+
+Begge manualer har et appendiks, der beskriver opbygningen af `.artixml`-filformatet.
 
 ## Installation
 
@@ -59,7 +66,8 @@ Windows installer, macOS DMG samt `.deb`-pakker til Debian 12, Ubuntu 22.04 og U
 | `Del`, `Ins`, `Backspace` | Slet, indsæt linje, slet linje |
 | `Ctrl+C/X/V`, `Ctrl+Z/Y` | Udklipsholder, fortryd |
 | `Ctrl+↑/↓` (`+Shift` = oktav) | Transponér |
-| `Num *` / `Num /`, `F1`/`F2` | Oktav op / ned |
+| `Num *` / `F2` | Oktav op |
+| `Num /` / `F1` | Oktav ned |
 | `Ctrl+N/O/S`, `Ctrl+Shift+S` | Nyt projekt, åbn, gem, gem som |
 | `Ctrl+I` / `Ctrl+E` | Åbn lydfil som instrument / eksporter lyd |
 | `Ctrl+T/M/P/Q` | Nyt track, mixer, plug-in manager, afslut |

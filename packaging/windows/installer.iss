@@ -42,6 +42,7 @@ Name: "{group}\Uninstall Artilody Tracker"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Artilody Tracker"; Filename: "{app}\Artilody Tracker.exe"; Tasks: desktopicon
 
 [Registry]
+Root: HKA; Subkey: "Software\Classes\.artixml"; ValueType: string; ValueName: ""; ValueData: "ArtilodyTracker.Project"; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Classes\.artilody"; ValueType: string; ValueName: ""; ValueData: "ArtilodyTracker.Project"; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Classes\ArtilodyTracker.Project"; ValueType: string; ValueName: ""; ValueData: "Artilody Tracker Project"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\ArtilodyTracker.Project\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\Artilody Tracker.exe,0"

@@ -89,7 +89,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$dist/soundfonts" | Out-Null
           Copy-Item "build/ArtilodyTracker_artefacts/Release/Artilody Tracker.exe" $dist
           Copy-Item soundfonts/GeneralUser-GS.sf2 "$dist/soundfonts/"
-          Copy-Item LICENSE, THIRD_PARTY_LICENSES.md, README.md $dist
+          Copy-Item LICENSE, THIRD_PARTY_LICENSES.md, README.md, docs/Manual-da.md, docs/Manual-en.md $dist
 
       - name: Build installer (Inno Setup)
         shell: pwsh
@@ -137,7 +137,7 @@ jobs:
           mkdir -p dmg
           cp -R "$APP" dmg/
           ln -s /Applications dmg/Applications
-          cp LICENSE THIRD_PARTY_LICENSES.md dmg/
+          cp LICENSE THIRD_PARTY_LICENSES.md docs/Manual-da.md docs/Manual-en.md dmg/
           mkdir -p dist
           hdiutil create -volname "Artilody Tracker" -srcfolder dmg -ov -format UDZO "dist/ArtilodyTracker-$VERSION-macOS-universal.dmg"
           ls -la dist

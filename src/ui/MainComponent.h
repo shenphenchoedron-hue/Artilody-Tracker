@@ -44,6 +44,8 @@ public:
     void stopPlayback();
     void rewindToStart();
     void loadFile (const juce::File&);
+    /** Opens a project handed over by the OS (double-click / drag onto the app icon), asking first if there are unsaved changes. */
+    void openFileFromSystem (const juce::File&);
     bool renderTo (const juce::File&);
     bool roundTripTest (const juce::File&);
     bool saveJazzDemo (const juce::File& projectFile, const juce::File& wavFile);
