@@ -14,6 +14,9 @@ namespace ProjectIO
     /** Creates the startup demo song using the built-in genre instruments. */
     void createDemoSong (AudioEngine&);
 
+    /** Creates a swing jazz test song (quartet + vibraphone solo). */
+    void createJazzDemo (AudioEngine&);
+
     /** Creates an empty project with a few tracks preloaded with Pop instruments. */
     void createEmptySong (AudioEngine&);
 

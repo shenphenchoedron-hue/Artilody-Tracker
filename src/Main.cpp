@@ -40,6 +40,18 @@ public:
             return;
         }
 
+        if (commandLine.startsWith ("--save-jazz-demo"))
+        {
+            auto args = juce::StringArray::fromTokens (commandLine.fromFirstOccurrenceOf ("--save-jazz-demo", false, false), true);
+            args.removeEmptyStrings();
+            auto cwd = juce::File::getCurrentWorkingDirectory();
+            const bool ok = args.size() > 0
+                && mainWindow->saveJazzDemo (cwd.getChildFile (args[0].unquoted()), args.size() > 1 ? cwd.getChildFile (args[1].unquoted()) : juce::File());
+            setApplicationReturnValue (ok ? 0 : 1);
+            quit();
+            return;
+        }
+
         if (commandLine.startsWith ("--roundtrip-test"))
         {
             auto out = juce::File::getCurrentWorkingDirectory().getChildFile (commandLine.fromFirstOccurrenceOf ("--roundtrip-test", false, false).trim().unquoted());
@@ -184,6 +196,7 @@ public:
 
         bool renderTo (const juce::File& f) { return content->renderTo (f); }
         bool roundTripTest (const juce::File& f) { return content->roundTripTest (f); }
+        bool saveJazzDemo (const juce::File& p, const juce::File& w) { return content->saveJazzDemo (p, w); }
 
         void tryClose()
         {

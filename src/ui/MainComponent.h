@@ -37,6 +37,7 @@ public:
     void loadFile (const juce::File&);
     bool renderTo (const juce::File&);
     bool roundTripTest (const juce::File&);
+    bool saveJazzDemo (const juce::File& projectFile, const juce::File& wavFile);
 
 private:
     void handleAsyncUpdate() override;

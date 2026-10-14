@@ -413,6 +413,7 @@ void MainComponent::showMainMenu()
     m.addSeparator();
     m.addItem (6, "Rename song...");
     m.addItem (7, "Load demo song");
+    m.addItem (12, "Load jazz demo song");
     m.addSeparator();
     m.addItem (8, "Plug-in Manager (VST3 / AU / CLAP)...");
     m.addItem (9, "Audio & MIDI settings...");
@@ -451,6 +452,14 @@ void MainComponent::showMainMenu()
                 PluginHost::get().closeAllEditors();
                 ctx.undo.clearUndoHistory();
                 ProjectIO::createDemoSong (engine);
+                resetEditorState();
+                structureChanged();
+                break;
+            case 12:
+                stopPlayback();
+                PluginHost::get().closeAllEditors();
+                ctx.undo.clearUndoHistory();
+                ProjectIO::createJazzDemo (engine);
                 resetEditorState();
                 structureChanged();
                 break;
@@ -648,6 +657,15 @@ bool MainComponent::roundTripTest (const juce::File& f)
     auto second = f.getSiblingFile ("roundtrip2.artilody");
     if (! ProjectIO::save (engine, second, err)) return false;
     return first == second.loadFileAsString();
+}
+
+bool MainComponent::saveJazzDemo (const juce::File& projectFile, const juce::File& wavFile)
+{
+    ProjectIO::createJazzDemo (engine);
+    juce::String err;
+    projectFile.getParentDirectory().createDirectory();
+    if (! ProjectIO::save (engine, projectFile, err)) return false;
+    return wavFile == juce::File() || engine.renderToFile (wavFile, 44100.0, 16, {}, err);
 }
 
 bool MainComponent::renderTo (const juce::File& f)
