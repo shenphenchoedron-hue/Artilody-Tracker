@@ -6,7 +6,7 @@ En pattern-baseret music tracker skrevet i C++ med [JUCE](https://juce.com).
 Til forskel fra de fleste trackere har Artilody Tracker en rigtig mixer: når du opretter et track,
 oprettes der automatisk en channel strip **lige under tracket**, som styrer det.
 
-
+[▶ Se Artilody Tracker i brug](./u720pArtilody_Tracker.mp4)
 
 ## Funktioner
 
