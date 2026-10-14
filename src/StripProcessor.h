@@ -94,6 +94,7 @@ private:
     std::vector<std::unique_ptr<PluginSlot>> fx;
 
     juce::AudioBuffer<float> scratch;
+    bool eqWasEnabled = false;   // audio thread: detects EQ being switched back on
     juce::MidiBuffer emptyMidi;
     double sampleRate = 44100.0;
     int blockSize = 512;

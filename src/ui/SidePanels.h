@@ -39,7 +39,17 @@ public:
     RowNumbers (AppContext&, PatternGrid&);
     void paint (juce::Graphics&) override;
 
+    // Drag over the row numbers to mark rows for looping; double-click or right-click to clear.
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseDoubleClick (const juce::MouseEvent&) override;
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+
 private:
+    int rowAt (int y) const;
+    int anchorRow = -1;        // row where the current drag started (-1 = not dragging)
+    int rangeAnchor = -1;      // first row of the marking, kept for Shift+click
     AppContext& ctx;
     PatternGrid& grid;
 };

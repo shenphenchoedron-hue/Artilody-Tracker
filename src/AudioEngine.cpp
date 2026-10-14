@@ -26,16 +26,23 @@ void AudioEngine::initialiseAudio (const juce::XmlElement* saved)
     if (err.isNotEmpty())
         DBG ("Audio init: " << err);
 
-    for (auto& m : juce::MidiInput::getAvailableDevices())
-    {
-        deviceManager.setMidiInputDeviceEnabled (m.identifier, true);
-    }
+    enableAllMidiInputs();
     deviceManager.addMidiInputDeviceCallback ({}, this);
+    // MIDI keyboards connected after start-up are picked up automatically
+    midiDeviceListConnection = juce::MidiDeviceListConnection::make ([this] { enableAllMidiInputs(); });
     deviceManager.addAudioCallback (this);
+}
+
+void AudioEngine::enableAllMidiInputs()
+{
+    for (auto& m : juce::MidiInput::getAvailableDevices())
+        if (! deviceManager.isMidiInputDeviceEnabled (m.identifier))
+            deviceManager.setMidiInputDeviceEnabled (m.identifier, true);
 }
 
 void AudioEngine::shutdownAudio()
 {
+    midiDeviceListConnection = {};
     deviceManager.removeMidiInputDeviceCallback ({}, this);
     deviceManager.removeAudioCallback (this);
     deviceManager.closeAudioDevice();
@@ -230,8 +237,7 @@ void AudioEngine::resetToEmpty (int numTracks)
         for (int i = 0; i < 3; ++i)
         {
             auto* b = master.getBuiltin (i);
-            for (int p = 0; p < b->numParams(); ++p)
-                b->set (p, b->params[(size_t) p]->defaultValue);
+            b->resetToDefaults();
             b->enabled = false;
         }
         master.volumeDb = 0.0f;
@@ -245,11 +251,15 @@ void AudioEngine::resetToEmpty (int numTracks)
 }
 
 //==============================================================================
-void AudioEngine::play (int sequenceIndex, int startRow, bool loopPattern)
+void AudioEngine::play (int sequenceIndex, int startRow, bool loopPattern, int loopFirst, int loopLast)
 {
+    if (loopFirst > loopLast) std::swap (loopFirst, loopLast);
+    const bool range = loopPattern && loopFirst >= 0;
     requestSeq = sequenceIndex;
-    requestRow = startRow;
+    requestRow = range ? juce::jlimit (loopFirst, loopLast, startRow) : startRow;
     requestLoop = loopPattern;
+    requestLoopFirst = range ? loopFirst : -1;
+    requestLoopLast = range ? loopLast : -1;
     transportRequest = 1;
 }
 
@@ -482,7 +492,12 @@ void AudioEngine::runSequencer (int64_t blockStart, int numSamples)
                 ++row;
                 const int patIndex = song.sequence.empty() ? 0 : song.sequence[(size_t) juce::jlimit (0, (int) song.sequence.size() - 1, seqIndex)];
                 const int rows = song.patterns.empty() ? 64 : song.patterns[(size_t) juce::jlimit (0, (int) song.patterns.size() - 1, patIndex)].numRows;
-                if (row >= rows)
+                const int first = loopFirstRow.load(), last = loopLastRow.load();
+                if (loopingPattern.load() && first >= 0 && (row > last || row >= rows))
+                {
+                    row = juce::jlimit (0, juce::jmax (0, rows - 1), first);   // loop the selected rows
+                }
+                else if (row >= rows)
                 {
                     row = 0;
                     if (! loopingPattern.load())
@@ -537,6 +552,8 @@ void AudioEngine::renderBlock (int numSamples)
             m.addEvent (juce::MidiMessage::allNotesOff (1), 0);
         }
         playing = false;
+        loopFirstRow = -1;
+        loopLastRow = -1;
         runtimeBpm = song.bpm;
         runtimeLpb = song.lpb;
     }
@@ -546,6 +563,8 @@ void AudioEngine::renderBlock (int numSamples)
         seqIndex = juce::jlimit (0, juce::jmax (0, (int) song.sequence.size() - 1), requestSeq.load());
         row = juce::jmax (0, requestRow.load());
         loopingPattern = requestLoop.load();
+        loopFirstRow = requestLoopFirst.load();
+        loopLastRow = requestLoopLast.load();
         firstRow = true;
         pendingJump = -1;
         nextRowTime = (double) sampleCounter;

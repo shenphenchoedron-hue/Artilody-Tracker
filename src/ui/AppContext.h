@@ -43,6 +43,13 @@ struct EditorState : public juce::ChangeBroadcaster
     bool followPlayback = true;
     bool mixerCollapsed = false;
 
+    // rows marked for looping (drag in the row-number column); valid for pattern 'loopPattern' only
+    int loopPattern = -1, loopFirst = -1, loopLast = -1;
+    bool hasLoopRange (int patternIndex) const { return loopPattern == patternIndex && loopFirst >= 0 && loopLast >= loopFirst; }
+    void clearLoopRange() { loopPattern = loopFirst = loopLast = -1; }
+
+    bool loopEnabled = false;   // Loop on: playback repeats the pattern (or the marked loop rows)
+
     bool hasSelection = false;
     int selStartTrack = 0, selStartCol = 0, selStartRow = 0;
     int selEndTrack = 0, selEndCol = 0, selEndRow = 0;
@@ -124,6 +131,7 @@ struct AppContext
     std::function<void (StripProcessor&, int track)> onInstrumentChanged;
     std::function<void()> onShowAudioSettings;
     std::function<void (int track)> onSelectTrack;
+    std::function<void()> onLoopRangeChanged;   // the marked loop rows changed
 
 private:
     Pattern editBefore;

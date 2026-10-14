@@ -13,7 +13,7 @@ oprettes der automatisk en channel strip **lige under tracket**, som styrer det.
 **Tracker**
 - Patterns med op til 512 linjer, flere note-kolonner pr. track (akkorder), kolonnerne Note / Ins / Vol / FX
 - Song sequence (order list), pattern-liste og pattern-egenskaber (navn, længde, farve, noter)
-- Keyboard-indspilning (Z–M / Q–P), MIDI-keyboard input, edit step, oktav, follow playback, loop pattern
+- Mini-vinduer til alle felter i edit mode: klaver til toner, instrumentliste, volumen-slider og effektvælger, MIDI-keyboard input (også akkorder), edit step, oktav, follow playback, loop pattern
 - Copy / cut / paste, transponering, interpolering af volume, indsæt/slet linjer, undo/redo
 - Effektkommandoer: `Txx` tempo, `Lxx` lines per beat, `Dxx` delay, `Cxx` cut, `Rxy` retrigger,
   `Pxx` pitch bend, `Mxx` modulation, `Bxx` hop i sekvensen
@@ -58,18 +58,19 @@ Windows installer, macOS DMG samt `.deb`-pakker til Debian 12, Ubuntu 22.04 og U
 | Tast | Funktion |
 |------|----------|
 | `Esc` | Edit mode til/fra |
-| `Space` / `Shift+Space` | Afspil sang / loop pattern (stop hvis den spiller) |
+| `Space` / `Shift+Space` | Afspil (fortsæt) sang / loop pattern eller loop-rækker (stop hvis den spiller) |
+| Træk over rækkenumrene | Markér rækker, der skal loopes (dobbeltklik fjerner) |
 | `Enter` | Afspil fra markørens linje |
-| `Z`…`M`, `Q`…`P` | Noder (to oktaver) |
-| `A` eller `1` | Note off |
+| Klik på et felt (edit mode) | Mini-vindue til tone, instrument, volume eller effekt |
+| MIDI-keyboard (edit mode) | Skriv toner (flere tangenter = akkord) |
 | `0-9`, `A-F` | Hex-værdier i Ins / Vol / FX |
 | Piletaster, `Tab`, `PgUp/PgDn`, `Home/End` | Navigation |
 | `Shift` + piletaster / mus-træk | Markering |
 | `Del`, `Ins`, `Backspace` | Slet, indsæt linje, slet linje |
 | `Ctrl+C/X/V`, `Ctrl+Z/Y` | Udklipsholder, fortryd |
 | `Ctrl+↑/↓` (`+Shift` = oktav) | Transponér |
-| `Num *` / `F2` | Oktav op |
-| `Num /` / `F1` | Oktav ned |
+| `Num *` / `F2` | Standardoktav op |
+| `Num /` / `F1` | Standardoktav ned |
 | `Ctrl+N/O/S`, `Ctrl+Shift+S` | Nyt projekt, åbn, gem, gem som |
 | `Ctrl+I` / `Ctrl+E` | Åbn lydfil som instrument / eksporter lyd |
 | `Ctrl+T/M/P/Q` | Nyt track, mixer, plug-in manager, afslut |

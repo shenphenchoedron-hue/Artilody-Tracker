@@ -272,7 +272,7 @@ void createDemoSong (AudioEngine& e)
     e.getStrip (0).volumeDb = -2.0f;
     e.getStrip (1).volumeDb = -3.0f;
     e.getStrip (1).eq.enabled = true;
-    e.getStrip (1).eq.set (BuiltinEQ::LowGain, 3.0f);
+    e.getStrip (1).eq.addBand (BuiltinEQ::BandType::LowShelf, 120.0f, 3.0f, 0.7071f);
     e.getStrip (2).reverb.enabled = true;
     e.getStrip (2).reverb.set (BuiltinReverb::Mix, 0.22f);
     e.getStrip (2).volumeDb = -5.0f;
@@ -384,8 +384,8 @@ void createJazzDemo (AudioEngine& e)
     e.getStrip (0).reverb.set (BuiltinReverb::Mix, 0.12f);
     e.getStrip (1).volumeDb = -1.0f;
     e.getStrip (1).eq.enabled = true;
-    e.getStrip (1).eq.set (BuiltinEQ::LowGain, 2.5f);
-    e.getStrip (1).eq.set (BuiltinEQ::LowCut, 35.0f);
+    e.getStrip (1).eq.addBand (BuiltinEQ::BandType::LowCut, 35.0f, 0.0f, 0.7071f);
+    e.getStrip (1).eq.addBand (BuiltinEQ::BandType::LowShelf, 120.0f, 2.5f, 0.7071f);
     e.getStrip (1).comp.enabled = true;
     e.getStrip (1).comp.set (BuiltinCompressor::Threshold, -16.0f);
     e.getStrip (1).comp.set (BuiltinCompressor::Ratio, 3.0f);
@@ -398,8 +398,7 @@ void createJazzDemo (AudioEngine& e)
     e.getStrip (3).reverb.enabled = true;
     e.getStrip (3).reverb.set (BuiltinReverb::Mix, 0.25f);
     e.getStrip (3).eq.enabled = true;
-    e.getStrip (3).eq.set (BuiltinEQ::MidFreq, 1800.0f);
-    e.getStrip (3).eq.set (BuiltinEQ::MidGain, 2.0f);
+    e.getStrip (3).eq.addBand (BuiltinEQ::BandType::Bell, 1800.0f, 2.0f, 0.9f);
     e.getStrip (4).volumeDb = -6.0f;
     e.getStrip (4).pan = 0.4f;
     e.getStrip (4).reverb.enabled = true;

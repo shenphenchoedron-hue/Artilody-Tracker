@@ -196,7 +196,92 @@ void SequenceList::paint (juce::Graphics& g)
 //==============================================================================
 RowNumbers::RowNumbers (AppContext& c, PatternGrid& g) : ctx (c), grid (g)
 {
-    setInterceptsMouseClicks (false, false);
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+}
+
+int RowNumbers::rowAt (int y) const
+{
+    auto* p = ctx.currentPattern();
+    if (p == nullptr) return -1;
+    return juce::jlimit (0, p->numRows - 1, grid.getFirstVisibleRow() + y / Layout::rowHeight);
+}
+
+void RowNumbers::mouseDown (const juce::MouseEvent& e)
+{
+    auto& st = ctx.state;
+    if (e.mods.isPopupMenu())
+    {
+        juce::PopupMenu m;
+        m.addItem (1, "Clear loop rows", st.hasLoopRange (st.pattern));
+        m.showMenuAsync (juce::PopupMenu::Options().withMousePosition(), [safe = juce::Component::SafePointer<RowNumbers> (this)] (int r)
+        {
+            if (safe == nullptr || r != 1) return;
+            safe->ctx.state.clearLoopRange();
+            safe->repaint();
+            if (safe->ctx.onLoopRangeChanged) safe->ctx.onLoopRangeChanged();
+        });
+        return;
+    }
+    const int r = rowAt (e.y);
+    if (r < 0) return;
+
+    // Shift+click extends the marking from its first row - scroll in between to reach rows further away
+    if (e.mods.isShiftDown() && rangeAnchor >= 0 && st.hasLoopRange (st.pattern))
+    {
+        anchorRow = rangeAnchor;
+        st.loopFirst = juce::jmin (rangeAnchor, r);
+        st.loopLast = juce::jmax (rangeAnchor, r);
+    }
+    else
+    {
+        anchorRow = rangeAnchor = r;
+        st.loopPattern = st.pattern;
+        st.loopFirst = st.loopLast = r;
+    }
+    beginDragAutoRepeat (40);   // keeps mouseDrag coming so dragging past the edge auto-scrolls
+    repaint();
+    grid.repaint();
+}
+
+void RowNumbers::mouseDrag (const juce::MouseEvent& e)
+{
+    if (anchorRow < 0 || e.mods.isPopupMenu()) return;
+
+    // dragging above / below the visible rows scrolls the pattern
+    if (e.y < 0)                grid.scrollRows (-1);
+    else if (e.y > getHeight()) grid.scrollRows (1);
+
+    const int r = rowAt (juce::jlimit (0, juce::jmax (0, getHeight() - 1), e.y));
+    auto& st = ctx.state;
+    st.loopFirst = juce::jmin (anchorRow, r);
+    st.loopLast = juce::jmax (anchorRow, r);
+    repaint();
+    grid.repaint();
+}
+
+void RowNumbers::mouseUp (const juce::MouseEvent& e)
+{
+    if (anchorRow < 0 || e.mods.isPopupMenu()) return;
+    anchorRow = -1;
+    if (ctx.onLoopRangeChanged) ctx.onLoopRangeChanged();
+}
+
+void RowNumbers::mouseDoubleClick (const juce::MouseEvent&)
+{
+    ctx.state.clearLoopRange();
+    repaint();
+    grid.repaint();
+    if (ctx.onLoopRangeChanged) ctx.onLoopRangeChanged();
+}
+
+void RowNumbers::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& w)
+{
+    // always scroll the rows here - also with Shift held (macOS turns Shift+wheel into a horizontal
+    // wheel), so you can mark a row, scroll and Shift+click a row further down
+    const float d = std::abs (w.deltaY) >= std::abs (w.deltaX) ? w.deltaY : w.deltaX;
+    if (d == 0.0f) return;
+    grid.scrollRows (d > 0 ? -2 : 2);
+    repaint();
 }
 
 void RowNumbers::paint (juce::Graphics& g)
@@ -208,6 +293,19 @@ void RowNumbers::paint (juce::Graphics& g)
     const int visible = grid.getNumVisibleRows() + 2;
     const int lpb = juce::jmax (1, ctx.engine.song.lpb);
     const int playRow = grid.getDisplayedPlayRow();
+
+    // marked loop rows: a rounded band behind the numbers
+    const auto& st = ctx.state;
+    if (st.hasLoopRange (st.pattern))
+    {
+        const int y0 = (st.loopFirst - first) * Layout::rowHeight, y1 = (st.loopLast - first + 1) * Layout::rowHeight;
+        const bool active = ctx.engine.isPlaying() && ctx.engine.isLoopingPattern() && ctx.engine.loopFirstRow.load() >= 0;
+        auto band = juce::Rectangle<float> (1.0f, (float) y0 + 1.0f, (float) getWidth() - 2.0f, (float) (y1 - y0) - 2.0f);
+        g.setColour (Theme::accent.withAlpha (active ? 0.30f : 0.16f));
+        g.fillRoundedRectangle (band, 5.0f);
+        g.setColour (Theme::accent.withAlpha (active ? 1.0f : 0.7f));
+        g.drawRoundedRectangle (band, 5.0f, 1.5f);
+    }
 
     g.setFont (Theme::monoFont (13.0f, false));
     for (int i = 0; i < visible; ++i)
@@ -526,15 +624,16 @@ void RightPanel::paint (juce::Graphics& g)
         const char* lines[] = {
             "Esc  -  edit mode on / off",
             "Space  -  play / stop song",
-            "Shift+Space  -  loop pattern",
-            "Z..M / Q..P  -  play notes",
-            "A or 1  -  note off",
+            "Shift+Space  -  loop",
+            "Drag row nos.  -  loop rows",
+            "Click field  -  edit it",
+            "MIDI keys  -  enter notes",
             "0-9 A-F  -  hex values",
             "Tab  -  next track",
             "Del / Ins / Bksp  -  edit rows",
             "Ctrl+C / X / V  -  clipboard",
             "Ctrl+Up / Down  -  transpose",
-            "Num * /  -  octave up / down",
+            "F1 / F2  -  default octave",
             "FX: T tempo, D delay, C cut,",
             "R retrig, P bend, M mod, B jump",
         };

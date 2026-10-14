@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(ArtilodyTracker VERSION 1.0.5 LANGUAGES C CXX)
+project(ArtilodyTracker VERSION 1.0.6 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,6 +52,8 @@ set(ARTILODY_SOURCES
     src/ui/PatternGrid.cpp
     src/ui/TrackArea.cpp
     src/ui/MixerStrip.cpp
+    src/ui/EQEditor.cpp
+    src/ui/CellPickers.cpp
     src/ui/SidePanels.cpp
     src/ui/MainComponent.cpp)
 

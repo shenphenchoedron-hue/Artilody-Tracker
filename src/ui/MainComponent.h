@@ -76,6 +76,14 @@ private:
 
     juce::TextButton addTrackButton { "+  Add Track" }, mixerButton { "Hide Mixer" }, fxListsButton { "Collapse FX lists" };
     juce::TextButton colsMinus { "-" }, colsPlus { "+" };
+    juce::TextButton editButton { "Edit: Off" }, loopToggle { "Loop: Off" };
+    void updateLoopToggle();
+    void setLoopEnabled (bool);
+    void startLoop (int fromRow = -1);
+
+    struct ResumePoint { int seq = -1, row = 0, selectedSlot = -1; } resume;   // where Stop was pressed
+    bool canResume() const;
+    void updateEditButton();
     IconButton mixerCollapseButton { "mixer", Theme::Icon::ChevronDown };
     juce::Rectangle<int> toolbarArea, patternInfoArea, colsLabelArea;
 

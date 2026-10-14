@@ -30,19 +30,28 @@ MainComponent::MainComponent (juce::ApplicationProperties& props) : properties (
     ctx.onPatternChanged = [this] { patternChanged(); };
     ctx.onShowAudioSettings = [this] { showAudioSettings(); };
     ctx.onSelectTrack = [this] (int t) { selectTrack (t); };
+    ctx.onLoopRangeChanged = [this]
+    {
+        // marking new loop rows while a loop is playing switches the loop straight away
+        if (engine.isPlaying() && ctx.state.loopEnabled && engine.playSeqIndex.load() == ctx.state.seqSlot)
+            startLoop();
+        updateLoopToggle();
+        rowNumbers.repaint();
+        trackArea.grid.repaint();
+    };
     ctx.state.mixerCollapsed = settings->getBoolValue ("mixerCollapsed", false);
     ctx.state.addChangeListener (this);
     engine.addChangeListener (this);
     engine.onProcessorDeleted = [] (juce::AudioProcessor* p) { PluginHost::get().closeEditor (p); };
     engine.onMidiNote = [this] (int note, int vel, bool on)
     {
-        if (on) trackArea.grid.enterMidiNote (note, vel);
+        trackArea.grid.enterMidiNote (note, vel, on);
     };
 
     // top bar
     topBar.onPlaySong = [this] { playSong (false); };
     topBar.onRewind = [this] { rewindToStart(); };
-    topBar.onPlayPattern = [this] { playPattern(); };
+    topBar.onToggleLoop = [this] { setLoopEnabled (! ctx.state.loopEnabled); };
     topBar.onStop = [this] { stopPlayback(); };
     topBar.onUndo = [this] { ctx.undo.undo(); trackArea.grid.repaint(); };
     topBar.onRedo = [this] { ctx.undo.redo(); trackArea.grid.repaint(); };
@@ -109,7 +118,19 @@ MainComponent::MainComponent (juce::ApplicationProperties& props) : properties (
         ctx.state.dirty = true;
         structureChanged();
     };
-    for (auto* b : { &addTrackButton, &mixerButton, &fxListsButton, &colsMinus, &colsPlus })
+    editButton.setTooltip ("Edit mode on / off (Esc). In edit mode you can click a note field to choose a note, or play notes on a MIDI keyboard.");
+    editButton.onClick = [this]
+    {
+        ctx.state.editMode = ! ctx.state.editMode;
+        ctx.state.changed();
+        trackArea.grid.grabKeyboardFocus();
+    };
+    updateEditButton();
+
+    loopToggle.setTooltip ("Loop on / off. When on, playback repeats the current pattern - or only the rows you mark by dragging over the row numbers to the left of the grid.");
+    loopToggle.onClick = [this] { setLoopEnabled (! ctx.state.loopEnabled); };
+
+    for (auto* b : { &addTrackButton, &mixerButton, &fxListsButton, &colsMinus, &colsPlus, &editButton, &loopToggle })
         addAndMakeVisible (b);
     addAndMakeVisible (mixerCollapseButton);
     addTrackButton.setColour (juce::TextButton::buttonColourId, Theme::selection);
@@ -162,8 +183,31 @@ void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* b)
     }
     // editor state change
     mixerButton.setButtonText (ctx.state.mixerCollapsed ? "Show Mixer" : "Hide Mixer");
+    updateEditButton();
+    updateLoopToggle();
+    repaint();   // the red edit-mode frame around the pattern
     trackArea.grid.repaint();
     updateTitle();
+}
+
+void MainComponent::updateLoopToggle()
+{
+    const bool on = ctx.state.loopEnabled;
+    const auto rows = ctx.state.hasLoopRange (ctx.state.pattern)
+                        ? " " + juce::String::toHexString (ctx.state.loopFirst).paddedLeft ('0', 2).toUpperCase() + "-"
+                              + juce::String::toHexString (ctx.state.loopLast).paddedLeft ('0', 2).toUpperCase()
+                        : juce::String();
+    loopToggle.setButtonText (juce::String (juce::CharPointer_UTF8 (on ? "\xe2\x9f\xb3  Loop: On" : "\xe2\x9f\xb3  Loop: Off")) + (on ? rows : juce::String()));
+    loopToggle.setColour (juce::TextButton::buttonColourId, on ? Theme::accent : Theme::panelAlt);
+    loopToggle.setColour (juce::TextButton::textColourOffId, on ? juce::Colours::white : Theme::text);
+}
+
+void MainComponent::updateEditButton()
+{
+    const bool on = ctx.state.editMode;
+    editButton.setButtonText (on ? juce::String (juce::CharPointer_UTF8 ("\xe2\x97\x8f  Edit: On")) : juce::String (juce::CharPointer_UTF8 ("\xe2\x97\x8b  Edit: Off")));
+    editButton.setColour (juce::TextButton::buttonColourId, on ? Theme::record : Theme::panelAlt);
+    editButton.setColour (juce::TextButton::textColourOffId, on ? juce::Colours::white : Theme::text);
 }
 
 void MainComponent::structureChanged()
@@ -185,6 +229,7 @@ void MainComponent::structureChanged()
 
 void MainComponent::patternChanged()
 {
+    updateLoopToggle();
     trackArea.grid.updateLayout();
     rowNumbers.repaint();
     sequenceList.repaint();
@@ -237,6 +282,10 @@ void MainComponent::resized()
         colsMinus.setBounds (tb.removeFromLeft (30).reduced (0, 4));
         tb.removeFromLeft (4);
         colsPlus.setBounds (tb.removeFromLeft (30).reduced (0, 4));
+        tb.removeFromLeft (16);
+        editButton.setBounds (tb.removeFromLeft (112).reduced (0, 3));
+        tb.removeFromLeft (8);
+        loopToggle.setBounds (tb.removeFromLeft (150).reduced (0, 3));
         tb.removeFromLeft (16);
         auto rightSide = tb.removeFromRight (290);
         mixerButton.setBounds (rightSide.removeFromRight (120).reduced (0, 3));
@@ -324,6 +373,7 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     }
     if (code == juce::KeyPress::returnKey && ! mods.isAnyModifierKeyDown())
     {
+        resume = {};
         engine.play (ctx.state.seqSlot, ctx.state.cursorRow, false);
         return true;
     }
@@ -359,39 +409,135 @@ void MainComponent::addTrack()
     scrollToTrack (t);
 }
 
+bool MainComponent::canResume() const
+{
+    // resume where playback stopped, unless another sequence slot has been selected since
+    return resume.seq >= 0 && ctx.state.seqSlot == resume.selectedSlot;
+}
+
 void MainComponent::playSong (bool fromStart)
 {
+    if (ctx.state.loopEnabled && ! fromStart)
+    {
+        startLoop();
+        return;
+    }
     if (fromStart)
     {
         ctx.state.seqSlot = 0;
         sequenceList.selectSlot (0);
+        engine.play (0, 0, false);
     }
-    engine.play (ctx.state.seqSlot, 0, false);
+    else if (! engine.isPlaying() && canResume())
+    {
+        engine.play (resume.seq, resume.row, false);
+    }
+    else
+    {
+        engine.play (ctx.state.seqSlot, 0, false);
+    }
+    resume = {};
     topBar.updateState();
+    trackArea.grid.repaint();
+    rowNumbers.repaint();
 }
 
 void MainComponent::rewindToStart()
 {
     // move to the start of the song; only keeps playing if it was already playing
     const bool wasPlaying = engine.isPlaying();
-    const bool looping = engine.isLoopingPattern();
+    resume = {};
     sequenceList.selectSlot (0);
     trackArea.grid.setCursor (ctx.state.cursorTrack, ctx.state.cursorColumn, ctx.state.cursorField, 0);
     if (wasPlaying)
-        engine.play (0, 0, looping);
+    {
+        if (ctx.state.loopEnabled) startLoop();
+        else engine.play (0, 0, false);
+    }
     topBar.updateState();
 }
 
 void MainComponent::playPattern()
 {
-    engine.play (ctx.state.seqSlot, 0, true);
+    // Shift+Space / menu: switch Loop on and start playing
+    if (! ctx.state.loopEnabled)
+    {
+        ctx.state.loopEnabled = true;
+        ctx.state.changed();
+    }
+    startLoop();
+}
+
+void MainComponent::setLoopEnabled (bool on)
+{
+    auto& st = ctx.state;
+    st.loopEnabled = on;
+    st.changed();
+
+    if (! engine.isPlaying())
+    {
+        topBar.updateState();
+        return;
+    }
+
+    const int seq = engine.playSeqIndex.load(), row = engine.playRow.load();
+    if (on)
+    {
+        // keep playing the pattern that is playing now, looping from the current row
+        if (seq != st.seqSlot)
+            sequenceList.selectSlot (seq);
+        startLoop (row);
+    }
+    else
+    {
+        // continue the song from the current position
+        engine.play (seq, row, false);
+        topBar.updateState();
+        trackArea.grid.repaint();
+        rowNumbers.repaint();
+    }
+}
+
+void MainComponent::startLoop (int fromRow)
+{
+    auto& st = ctx.state;
+    if (st.hasLoopRange (st.pattern))
+    {
+        // loop the rows marked in the row-number column
+        const int start = (fromRow >= st.loopFirst && fromRow <= st.loopLast) ? fromRow : st.loopFirst;
+        engine.play (st.seqSlot, start, true, st.loopFirst, st.loopLast);
+    }
+    else if (st.hasSelection && st.selStartRow != st.selEndRow)
+    {
+        // or the rows of a multi-row selection in the grid
+        const int r0 = juce::jmin (st.selStartRow, st.selEndRow), r1 = juce::jmax (st.selStartRow, st.selEndRow);
+        engine.play (st.seqSlot, (fromRow >= r0 && fromRow <= r1) ? fromRow : r0, true, r0, r1);
+    }
+    else
+    {
+        int row = 0;
+        if (fromRow >= 0) row = fromRow;
+        else if (! engine.isPlaying() && canResume() && resume.seq == st.seqSlot) row = resume.row;
+        engine.play (st.seqSlot, row, true);
+    }
+    resume = {};
     topBar.updateState();
+    trackArea.grid.repaint();
+    rowNumbers.repaint();
 }
 
 void MainComponent::stopPlayback()
 {
+    if (engine.isPlaying())
+    {
+        resume.seq = engine.playSeqIndex.load();
+        resume.row = engine.playRow.load();
+        resume.selectedSlot = ctx.state.seqSlot;
+    }
     engine.stop();
     topBar.updateState();
+    trackArea.grid.repaint();
+    rowNumbers.repaint();
 }
 
 //==============================================================================
@@ -506,7 +652,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int index, const juce::String&)
             item (mi_playSong, "Play Song", "Space");
             item (mi_playFromStart, "Play From Start");
             item (mi_rewind, "Go to Start");
-            item (mi_playPattern, "Loop Pattern", "Shift+Space");
+            item (mi_playPattern, "Loop Pattern / Loop Rows", "Shift+Space");
             item (mi_stop, "Stop", "Space", engine.isPlaying());
             m.addSeparator();
             item (mi_followPlayback, "Follow Playback", {}, true, ctx.state.followPlayback);
@@ -636,11 +782,12 @@ void MainComponent::showKeyboardHelp()
 {
     juce::String t;
     t << "Esc\tEdit mode on / off\n"
-      << "Space\tPlay / stop song\n"
-      << "Shift+Space\tLoop current pattern\n"
+      << "Space\tPlay (continue) / stop song\n"
+      << "Shift+Space\tLoop on + play (pattern or loop rows)\n"
+      << "Drag over row numbers\tMark rows to loop (Shift+click extends, double-click clears)\n"
       << "Enter\tPlay from cursor row\n"
-      << "Z..M, Q..P\tNotes (two octaves)\n"
-      << "A or 1\tNote off\n"
+      << "Click a field (edit mode)\tChoose note, instrument, volume or effect\n"
+      << "MIDI keyboard (edit mode)\tEnter notes (held keys = chord)\n"
       << "0-9, A-F\tHex values in Ins / Vol / FX\n"
       << "Arrows, Tab, PgUp/PgDn, Home/End\tNavigation\n"
       << "Shift+Arrows / mouse drag\tSelect\n"
@@ -648,8 +795,8 @@ void MainComponent::showKeyboardHelp()
       << "Ctrl+C / X / V\tCopy, cut, paste\n"
       << "Ctrl+Z / Y\tUndo / redo\n"
       << "Ctrl+Up / Down (+Shift)\tTranspose semitone (octave)\n"
-      << "Num * / F2\tOctave up\n"
-      << "Num / / F1\tOctave down\n"
+      << "Num * / F2\tDefault octave up\n"
+      << "Num / / F1\tDefault octave down\n"
       << "Ctrl+N / O / S / E / I\tNew, open, save, export audio, open audio file\n"
       << "Ctrl+T / M / P\tAdd track, mixer, plug-in manager\n\n"
       << "Effects: Txx tempo, Lxx lines per beat, Dxx delay, Cxx cut,\n"

@@ -2,6 +2,21 @@
 
 Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channel strip lige under sig.
 
+### Nyt i 1.0.6
+- **Parametrisk EQ:** op til 8 frit placerede bånd (IIR-biquad: Bell, Low/High Shelf, Low/High Cut, Notch).
+  Klik på linjen for at sætte et punkt, træk det op/ned og til siden, Shift = fin justering, musehjul = Q.
+  Ændringer under afspilning glider blødt uden klik. Gamle projekter omdannes automatisk.
+- **Mini-vinduer til alle felter** i edit mode: klaver med oktavvalg til toner (inkl. Note off),
+  instrumentliste, volumen-slider med dynamik-knapper og en effektvælger, der forklarer værdien i klartekst.
+- Computertastaturet spiller ikke længere toner (tasterne svarede ikke til tonernes navne).
+- **MIDI-keyboard:** keyboards tilsluttet under kørslen findes automatisk, og akkorder skrives i flere
+  note-kolonner.
+- **Edit: On/Off** og **Loop: On/Off** knapper i værktøjslinjen.
+- **Loop af rækker:** træk over rækkenumrene (eller klik og Shift+klik) for at markere rækker, der skal loopes.
+- **Play fortsætter** fra der, hvor man trykkede Stop.
+- Rød stop-knap, større rund optageknap der lyser og pulserer i edit mode, tydeligt loop-ikon.
+- Manualerne er opdateret.
+
 ### Nyt i 1.0.5
 - **Scan for new plug-ins**: én knap i Plug-in Manager (og menupunktet *Plug-ins → Scan for New Plug-ins*)
   scanner VST3, AU og CLAP i ét hug. Kun nye eller opdaterede plug-ins indlæses.

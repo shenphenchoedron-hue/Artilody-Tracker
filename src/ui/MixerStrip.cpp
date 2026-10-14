@@ -1,5 +1,6 @@
 #include "MixerStrip.h"
 #include "../PluginHost.h"
+#include "EQEditor.h"
 
 namespace artilody
 {
@@ -68,11 +69,9 @@ BuiltinEditor::BuiltinEditor (BuiltinEffect& e, juce::Colour a) : fx (e), accent
 
     resetButton.onClick = [this]
     {
+        fx.resetToDefaults();
         for (int i = 0; i < fx.numParams(); ++i)
-        {
-            fx.set (i, fx.params[(size_t) i]->defaultValue);
             knobs[i]->setValue (fx.get (i), juce::dontSendNotification);
-        }
         repaint();
     };
     addAndMakeVisible (resetButton);
@@ -113,8 +112,7 @@ BuiltinEditor::BuiltinEditor (BuiltinEffect& e, juce::Colour a) : fx (e), accent
 
     const int cols = 4;
     const int rows = (fx.numParams() + cols - 1) / cols;
-    const bool hasCurve = dynamic_cast<BuiltinEQ*> (&fx) != nullptr;
-    setSize (cols * 86 + 24, 50 + rows * 92 + (hasCurve ? 120 : 0) + (dynamic_cast<BuiltinCompressor*> (&fx) != nullptr ? 26 : 0));
+    setSize (cols * 86 + 24, 50 + rows * 92 + (dynamic_cast<BuiltinCompressor*> (&fx) != nullptr ? 26 : 0));
     startTimerHz (20);
 }
 
@@ -132,15 +130,7 @@ void BuiltinEditor::resized()
     enable.setBounds (top.removeFromRight (110));
     r.removeFromTop (6);
 
-    if (dynamic_cast<BuiltinEQ*> (&fx) != nullptr)
-    {
-        curveArea = r.removeFromTop (110);
-        r.removeFromTop (8);
-    }
-    else
-    {
-        curveArea = {};
-    }
+    curveArea = {};
     if (dynamic_cast<BuiltinCompressor*> (&fx) != nullptr)
     {
         curveArea = r.removeFromTop (20);
@@ -168,36 +158,6 @@ void BuiltinEditor::paint (juce::Graphics& g)
     {
         auto kb = knobs[i]->getBounds();
         g.drawText (fx.params[(size_t) i]->name, kb.getX(), kb.getY() - 16, kb.getWidth(), 14, juce::Justification::centred);
-    }
-
-    if (auto* eq = dynamic_cast<BuiltinEQ*> (&fx); eq != nullptr && ! curveArea.isEmpty())
-    {
-        auto c = curveArea.toFloat();
-        g.setColour (Theme::gridBg);
-        g.fillRoundedRectangle (c, 8.0f);
-        g.setColour (Theme::gridLine);
-        for (float db : { -12.0f, 0.0f, 12.0f })
-        {
-            const float y = c.getCentreY() - db / 18.0f * c.getHeight() * 0.45f;
-            g.drawHorizontalLine ((int) y, c.getX() + 4, c.getRight() - 4);
-        }
-        for (float f : { 100.0f, 1000.0f, 10000.0f })
-        {
-            const float x = c.getX() + c.getWidth() * (std::log10 (f / 20.0f) / 3.0f);
-            g.drawVerticalLine ((int) x, c.getY() + 4, c.getBottom() - 4);
-        }
-        juce::Path p;
-        for (int i = 0; i <= 120; ++i)
-        {
-            const float t = (float) i / 120.0f;
-            const float f = 20.0f * std::pow (1000.0f, t);
-            const float db = juce::jlimit (-18.0f, 18.0f, eq->getMagnitudeDb (f));
-            const float x = c.getX() + c.getWidth() * t;
-            const float y = c.getCentreY() - db / 18.0f * c.getHeight() * 0.45f;
-            if (i == 0) p.startNewSubPath (x, y); else p.lineTo (x, y);
-        }
-        g.setColour (fx.enabled.load() ? accent : Theme::gridDim);
-        g.strokePath (p, juce::PathStrokeType (2.0f));
     }
 
     if (auto* comp = dynamic_cast<BuiltinCompressor*> (&fx); comp != nullptr && ! curveArea.isEmpty())
@@ -463,8 +423,20 @@ public:
         void mouseUp (const juce::MouseEvent& e) override
         {
             if (! e.mouseWasClicked()) return;
-            auto content = std::make_unique<BuiltinEditor> (*fx(), panel.owner.colour());
-            juce::CallOutBox::launchAsynchronously (std::move (content), getScreenBounds(), nullptr);
+            if (auto* eq = dynamic_cast<BuiltinEQ*> (fx()))
+            {
+                juce::Component::SafePointer<juce::Component> safeRow (this);
+                auto content = std::make_unique<EQEditor> (*eq, panel.owner.colour(), [safeRow]
+                {
+                    if (safeRow != nullptr) safeRow->repaint();
+                });
+                juce::CallOutBox::launchAsynchronously (std::move (content), getScreenBounds(), nullptr);
+            }
+            else
+            {
+                auto content = std::make_unique<BuiltinEditor> (*fx(), panel.owner.colour());
+                juce::CallOutBox::launchAsynchronously (std::move (content), getScreenBounds(), nullptr);
+            }
             panel.owner.ctx.state.dirty = true;
         }
 

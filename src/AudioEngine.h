@@ -23,6 +23,8 @@ public:
     void shutdownAudio();
 
     juce::AudioDeviceManager deviceManager;
+    /** Enables every MIDI input (also called when a MIDI device is plugged in while running). */
+    void enableAllMidiInputs();
     Song song;
 
     StripProcessor& getStrip (int track) { return *strips[(size_t) track]; }
@@ -50,7 +52,12 @@ public:
 
     //==============================================================================
     // Transport
-    void play (int sequenceIndex, int row, bool loopPattern);
+    /** Starts playback. With loopPattern the current pattern repeats; loopFirstRow / loopLastRow
+        (>= 0) restrict the loop to those rows of the pattern. */
+    void play (int sequenceIndex, int row, bool loopPattern, int loopFirstRow = -1, int loopLastRow = -1);
+
+    /** Rows of the pattern loop while looping a row range, else -1. */
+    std::atomic<int> loopFirstRow { -1 }, loopLastRow { -1 };
     void stop();
     bool isPlaying() const noexcept { return playing.load(); }
     bool isLoopingPattern() const noexcept { return loopingPattern.load(); }
@@ -137,6 +144,7 @@ private:
     std::atomic<int> transportRequest { 0 }; // 1 = start, 2 = stop
     std::atomic<int> requestSeq { 0 }, requestRow { 0 };
     std::atomic<bool> requestLoop { false };
+    std::atomic<int> requestLoopFirst { -1 }, requestLoopLast { -1 };
     int seqIndex = 0, row = 0;
     bool firstRow = true;
     int pendingJump = -1;
@@ -148,6 +156,8 @@ private:
     std::atomic<int64_t> samplesPlayed { 0 };
     bool songWrapped = false;
     bool exporting = false;
+
+    juce::MidiDeviceListConnection midiDeviceListConnection;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioEngine)
 };

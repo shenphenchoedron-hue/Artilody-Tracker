@@ -1,6 +1,6 @@
 # Artilody Tracker – Brugermanual
 
-*Version 1.0.3 · [English version](Manual-en.md)*
+*Version 1.0.6 · [English version](Manual-en.md)*
 
 Artilody Tracker er en pattern-baseret music tracker. Musikken skrives som noder i lodrette kolonner, der
 afspilles linje for linje oppefra og ned. Til forskel fra de fleste trackere har hvert track sin egen
@@ -67,7 +67,7 @@ Hvis lyden hakker, så hæv **buffer size** (fx 512 eller 1024 samples).
 | **Sekvens** | Rækkefølgen af patterns i sangen (order list). Det samme pattern kan bruges flere gange. |
 | **BPM** | Tempo i slag pr. minut. |
 | **LPB** | *Lines per beat* – hvor mange linjer der går på ét slag. Ved LPB 4 er hver linje en 1/16-node. |
-| **Edit mode** | Når edit mode er slået til, skrives tasterne ind i patternet. Ellers spiller de kun tonen. |
+| **Edit mode** | Når edit mode er slået til, kan du skrive i patternet: klik på et notefelt for at vælge en tone, eller spil på et MIDI-keyboard. |
 
 Alle tal i patterns (instrument, volume og effektværdier) vises **hexadecimalt** (00–FF), som det er
 skik i trackere.
@@ -94,6 +94,8 @@ skik i trackere.
 - **Værktøjslinjen**:
   - **+ Add Track**
   - **Columns − / +**: antal note-kolonner på det valgte track
+  - **Edit: On / Off**: slår edit mode til og fra (rød, når den er tændt)
+  - **Loop: On / Off**: slår loop til og fra (grøn, når den er tændt)
   - en info-boks med patternets nummer og navn samt markørens track og linje
   - **Collapse FX lists** og **Hide Mixer / Show Mixer**
 - **Venstre kolonne**: sekvenslisten (*Seq*), linjenumre (hex) og nederst **master-stripen**.
@@ -110,13 +112,13 @@ Når **edit mode** er slået til, får griddet en rød ramme, og markøren blive
 | Knap / felt | Funktion |
 |---|---|
 | **Rewind** | Går til starten af sangen (sekvens-plads 0, linje 0) uden at starte afspilning. |
-| **Play** | Afspiller sangen fra den valgte sekvens-plads (**Space**). |
-| **Loop** | Afspiller det aktuelle pattern i loop (**Shift+Space**). |
-| **Stop** | Stopper og slukker alle toner. |
+| **Play** | Afspiller sangen (**Space**). Efter **Stop** fortsætter den fra det sted, hvor den stoppede. Har du valgt en anden sekvens-plads i mellemtiden, starter den dér. |
+| **Loop** (cirkel-pilen) | Slår loop til/fra, ligesom **Loop: On / Off** i værktøjslinjen. Se nedenfor. |
+| **Stop** | Stopper og slukker alle toner. Positionen huskes, så **Play** fortsætter herfra. |
 | **Record** | Slår edit mode til/fra (**Esc**). |
 | **BPM** | Tempo, 20–999. Viser det aktuelle tempo under afspilning, også når `Txx`-effekter ændrer det. |
 | **LPB** | Linjer pr. slag, 1–32. |
-| **Oct** | Grundoktav for tastaturet, 0–9 (standard 4). |
+| **Oct** | Standardoktav for vinduet *Choose note*, 0–9 (standard 4). |
 | **Step** | Edit step, 0–16: hvor mange linjer markøren flytter sig, efter du har skrevet en værdi. 0 = bliver stående. |
 | **Follow** | Når den er tændt, følger griddet afspilningen. |
 | **MASTER / CPU** | Master-udgangens niveaumeter og lydmotorens CPU-forbrug. |
@@ -129,6 +131,20 @@ Når **edit mode** er slået til, får griddet en rød ramme, og markøren blive
 - **Rul** med musehjulet (±1).
 - **Klik** én gang for at vælge en forudindstillet værdi i en menu.
 - **Dobbeltklik** for at skrive en præcis værdi.
+
+**Loop:** Knappen **Loop: On / Off** i værktøjslinjen (og cirkel-pilen i topbjælken) slår loop til og fra.
+Knappen er grøn, når loop er slået til.
+
+- Når loop er slået til, gentager **Play** det aktuelle pattern i stedet for at spille hele sangen.
+- Vil du kun loope nogle rækker, så træk med musen hen over **rækkenumrene** til venstre for griddet.
+  Rækkerne markeres med et grønt bånd, og loop-knappen viser dem, fx *Loop: On 04-0B*.
+- Rækker uden for skærmen: træk forbi den øverste eller nederste række, så ruller griddet med. Eller klik på
+  den første række, rul ned (med musehjulet over griddet eller rækkenumrene) og **Shift+klik** på den sidste
+  række.
+- Du kan slå loop til og fra og markere nye rækker, mens musikken spiller. Det skifter med det samme.
+- Dobbeltklik på rækkenumrene (eller højreklik → *Clear loop rows*) fjerner markeringen, så hele pattern'et
+  loopes igen.
+- **Shift+Space** slår loop til og starter afspilningen.
 
 **Afspilning fra tastaturet:**
 
@@ -198,31 +214,43 @@ Linjer, der starter et slag (hver LPB-linje), har en lysere baggrund og fed skri
 
 ### Skriv noder
 
-1. Tryk **Esc** for at slå edit mode til (rød ramme).
-2. Spil på computertastaturet, der er indrettet som et klaver:
+1. Slå edit mode til med knappen **Edit** i værktøjslinjen eller med **Esc**. Griddet får en rød ramme.
+2. Klik på et notefelt. Et lille vindue, **Choose note**, åbner med oktavknapper (1–8) og et klaver med én
+   oktav:
+   - Klik på en tangent for at vælge og høre tonen. Feltet øverst til højre viser tonen, fx `C-3`.
+   - Klik på en oktavknap for at vælge oktav.
+   - **Insert note** (eller **Return**) skriver tonen. Dobbeltklik på en tangent skriver den med det samme.
+   - **Note off** skriver **OFF**: den foregående tone i kolonnen slippes.
+   - **Cancel**, krydset eller **Esc** lukker vinduet uden at skrive noget.
+   - Tastaturet virker også i vinduet: **←/→** vælger tone, **↑/↓** vælger oktav.
 
-```
-Øvre række (oktav +1):   2 3   5 6 7   9 0
-                        Q W E R T Y U I O P
-Nedre række (grundoktav): S D   G H J   L
-                        Z X C V B N M , .
-```
+Vinduet starter i den oktav, feltet allerede har, ellers i standardoktaven (*Oct* i topbjælken, som også
+følger den sidst valgte oktav). Når en tone er skrevet, flytter markøren sig *Step* linjer ned.
 
-- **Z** = C i grundoktaven (*Oct*), **S** = C#, **X** = D … **M** = H (B).
-- **Q** = C en oktav højere.
-- **1** eller **A** skriver **OFF**: den foregående tone i kolonnen slippes.
-- Med standardoktav 4 er **Z** = `C-4` og **Q** = `C-5`.
-- Skift oktav med **F1/F2** eller **Num / / Num \***.
+Computertastaturet bruges ikke længere til at spille toner, fordi tasterne ikke svarer til tonernes navne.
 
-Noder høres altid, også uden edit mode, men de skrives kun ind i patternet, når edit mode er tændt. Når
-en tone er skrevet, flytter markøren sig *Step* linjer ned.
+**MIDI-keyboard:** Alle MIDI-indgange er aktive, også keyboards, der tilsluttes, mens programmet kører.
+Toner spilles altid på markørens track. I edit mode skrives de ind ved markøren med anslaget som Vol-værdi,
+og markøren flytter sig *Step* linjer ned. Trykker du flere tangenter ned samtidig, skrives akkorden i de
+næste note-kolonner på samme linje, hvis tracket har flere kolonner.
 
-**MIDI-keyboard:** Alle MIDI-indgange er aktive. Toner spilles på markørens track, og i edit mode skrives de
-ind med anslaget som Vol-værdi.
+### Instrument, volume og effekt med musen
+
+I edit mode åbner et klik på de andre felter også et lille vindue, der passer til feltet:
+
+| Felt | Vindue |
+|---|---|
+| **Ins** | **Choose instrument**: en liste over alle tracks med farve, navn og instrument. Klik for at vælge, dobbeltklik eller **Use instrument** for at skrive det. **Clear** tømmer feltet, så tonen spiller på trackets eget instrument. |
+| **Vol** | **Volume**: en volumen-slider (00–7F) med en stor bjælke, der viser værdien i hex, procent og dB. **−/+** og piletasterne ændrer i trin af 1 (Shift = 16), og knapperne *pp, p, mf, f, ff* giver faste niveauer. **Clear** giver standardstyrken. |
+| **FX** | **Effect**: vælg kommando (Tempo, Lines/beat, Delay, Cut, Retrigger, Pitch bend, Modulation, Jump). Under knapperne står, hvad effekten gør, og hvad værdien betyder, fx *120 BPM* eller *Delay by 50 % of a line*. Værdien sættes med en slider i et område, der passer til kommandoen. Retrigger har to slidere: hvor tit tonen gentages, og hvor meget den falder i styrke. **Clear** fjerner effekten. |
+
+Øverst til højre i vinduet står den værdi, der skrives, fx `03`, `50` eller `T78`. **Return** skriver, **Esc**
+lukker. Efter skrivning flytter markøren sig *Step* linjer ned.
 
 ### Hex-værdier
 
-Placér markøren i Ins-, Vol- eller FX-værdi-feltet, og skriv **0–9** og **A–F**:
+Du kan også skrive værdierne direkte. Placér markøren i Ins-, Vol- eller FX-værdi-feltet, og skriv **0–9** og
+**A–F**:
 
 - Hvert felt har to cifre (høj og lav). Markøren hopper ned efter hvert ciffer.
 - I FX-kommandofeltet skrives et bogstav, fx **T** eller **D**.
@@ -416,20 +444,49 @@ gemmes i projektet. Plug-ins uden egen editor får en simpel parameter-editor.
 
 ## 12. Indbyggede effekter
 
-Klik på **EQ**, **Comp** eller **Reverb** i en strip for at åbne effektens editor:
+Klik på **EQ**, **Comp** eller **Reverb** i en strip for at åbne effektens editor. Effekten tændes
+automatisk, når du ændrer noget.
 
-- Effekten tændes automatisk, når du drejer på en knap.
+### Parametrisk EQ
+
+EQ'en er en parametrisk EQ med op til **8 frit placerede bånd**. Hvert bånd er et IIR-biquad-filter. Grafen
+viser frekvens (20 Hz–20 kHz) vandret og forstærkning (±24 dB) lodret. Den tykke linje er den samlede kurve,
+og hvert bånd har sit eget nummererede punkt og sin egen farve.
+
+| Handling | Funktion |
+|---|---|
+| **Klik på linjen** | Indsætter et punkt ved den frekvens. Det starter på 0 dB, så lyden ikke ændres, før du trækker i det. Hold museknappen nede for at trække det med det samme. |
+| **Dobbeltklik** i grafen | Indsætter et punkt ved musen. |
+| **Træk** i et punkt | Vandret = frekvens, lodret = forstærkning. |
+| **Shift + træk** | Fin justering (10 gange langsommere) for at ramme præcist. |
+| **Musehjul** over et punkt | Ændrer Q (båndbredde). Med Shift i små trin. |
+| **Dobbeltklik** på et punkt | Sletter båndet. |
+| **Højreklik** på et punkt | Vælg type, nulstil gain eller Q, eller slet båndet. |
+| **Reset** | Fjerner alle bånd. |
+
+Feltet under grafen viser det valgte bånd: type, **Frequency**, **Gain** og **Q / Width**. Klik på tallet
+under en knap for at skrive en præcis værdi, fx `1.25k`. Dobbeltklik på en knap nulstiller den.
+
+| Type | Virkning | Lodret træk |
+|---|---|---|
+| Bell | Hæver eller sænker omkring frekvensen | Gain |
+| Low Shelf / High Shelf | Hæver eller sænker alt under / over frekvensen | Gain |
+| Low Cut / High Cut | Fjerner alt under / over frekvensen (12 dB/oktav) | Q (resonans) |
+| Notch | Skærer en smal frekvens helt væk | Q (bredde) |
+
+| Parameter | Område |
+|---|---|
+| Frequency | 20 Hz – 20 kHz |
+| Gain | −24 – +24 dB |
+| Q | 0,1 – 18 |
+
+Når et punkt flyttes under afspilning, glider filteret blødt over til den nye indstilling (ca. 25 ms), så der
+ikke opstår klik.
+
+### Compressor og Reverb
+
 - Dobbeltklik på en knap nulstiller den.
 - **Reset** sætter alle knapper til standard.
-
-**EQ** (low cut + 3 bånd) har en frekvenskurve, der viser resultatet:
-
-| Parameter | Område | Standard |
-|---|---|---|
-| Low Cut | 20–1000 Hz | 20 Hz (slukket) |
-| Low Freq / Low Gain | 30–600 Hz / ±18 dB | 120 Hz / 0 dB |
-| Mid Freq / Mid Gain / Mid Q | 200–8000 Hz / ±18 dB / 0,2–6 | 1 kHz / 0 dB / 0,9 |
-| High Freq / High Gain | 2–16 kHz / ±18 dB | 8 kHz / 0 dB |
 
 **Compressor** har et meter, der viser gain reduction:
 
@@ -509,10 +566,10 @@ På macOS bruges **Cmd** i stedet for **Ctrl**.
 | Tast | Funktion |
 |---|---|
 | Esc | Edit mode til/fra |
-| Space / Shift+Space | Afspil sang / loop pattern (stop, hvis den spiller) |
+| Space / Shift+Space | Afspil (fortsæt) sang / loop pattern eller loop-rækker (stop, hvis den spiller) |
 | Enter | Afspil fra markørens linje |
-| Z…M, Q…P | Noder (to oktaver) |
-| A eller 1 | Note off |
+| Klik på et felt (edit mode) | Vindue til tone, instrument, volume eller effekt |
+| MIDI-keyboard (edit mode) | Skriv toner (flere tangenter = akkord) |
 | 0–9, A–F | Hex-værdier i Ins / Vol / FX |
 | Piletaster, Tab, PgUp/PgDn, Home/End | Navigation |
 | Shift + piletaster / træk med musen | Markering |
@@ -521,8 +578,8 @@ På macOS bruges **Cmd** i stedet for **Ctrl**.
 | Ctrl+A | Markér hele tracket |
 | Ctrl+Z / Ctrl+Y (eller Ctrl+Shift+Z) | Fortryd / gentag |
 | Ctrl+↑/↓ (+Shift = oktav) | Transponér |
-| Num \* / F2 | Oktav op |
-| Num / / F1 | Oktav ned |
+| Num \* / F2 | Standardoktav op |
+| Num / / F1 | Standardoktav ned |
 | Ctrl+N / O / S / Shift+S | Nyt, åbn, gem, gem som |
 | Ctrl+I / Ctrl+E | Åbn lydfil som instrument / eksportér lyd |
 | Ctrl+T / M / P / Q | Nyt track, mixer, plug-in manager, afslut |
@@ -558,7 +615,7 @@ eller behandles med XML-værktøjer. Rodelementet hedder `ARTILODY_PROJECT`.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<ARTILODY_PROJECT version="1.0.3">
+<ARTILODY_PROJECT version="1.0.6">
   <SONG title="…" bpm="128.0" lpb="4" sequence="0,0,1">
     <TRACKS>
       <TRACK … />            <!-- ét pr. track, i rækkefølge -->
@@ -685,14 +742,33 @@ Indeholder ét `PLUGIN`-element pr. plug-in-effekt i signalrækkefølge. Hvert e
 
 #### `BUILTINS`
 
-Indeholder tre `FX`-elementer for de indbyggede effekter. Hvert har `name`, `enabled` (0/1) og en attribut
-pr. parameter:
+Indeholder tre `FX`-elementer for de indbyggede effekter. Hvert har `name` og `enabled` (0/1).
+
+`Compressor` og `Reverb` har en attribut pr. parameter:
 
 | `name` | Parametre (attributnavn = værdi) |
 |---|---|
-| `EQ` | `lowcut`, `lowfreq`, `lowgain`, `midfreq`, `midgain`, `midq`, `hifreq`, `higain` (Hz / dB / Q) |
 | `Compressor` | `threshold` (dB), `ratio`, `attack` (ms), `release` (ms), `knee` (dB), `makeup` (dB) |
 | `Reverb` | `size`, `damping`, `width`, `mix` (0–1) |
+
+`EQ` har i stedet ét `BAND`-underelement pr. bånd (højst 8):
+
+```xml
+<FX name="EQ" enabled="1">
+  <BAND type="lowcut" freq="40.0" gain="0.0" q="0.7071"/>
+  <BAND type="bell" freq="2500.0" gain="5.0" q="0.8"/>
+</FX>
+```
+
+| Attribut | Betydning |
+|---|---|
+| `type` | `bell`, `lowshelf`, `highshelf`, `lowcut`, `highcut` eller `notch` |
+| `freq` | Frekvens i Hz (20–20000) |
+| `gain` | Forstærkning i dB (−24–24). Bruges kun af `bell` og shelf-typerne |
+| `q` | Q / båndbredde (0,1–18) |
+
+Filer fra version 1.0.0–1.0.5 gemte EQ'en som faste attributter (`lowcut`, `lowfreq`, `lowgain`, `midfreq`,
+`midgain`, `midq`, `hifreq`, `higain`). De indlæses stadig og omdannes automatisk til bånd.
 
 Områder og standardværdier står i afsnit 12. Mangler en parameter, bruges standardværdien.
 
@@ -714,7 +790,7 @@ stemme overens.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<ARTILODY_PROJECT version="1.0.3">
+<ARTILODY_PROJECT version="1.0.6">
   <SONG title="Mini" bpm="120.0" lpb="4" sequence="0">
     <TRACKS>
       <TRACK name="Piano" colour="ff2f7bf0" columns="1" uid="1"/>

@@ -1,6 +1,6 @@
 # Artilody Tracker – User Manual
 
-*Version 1.0.3 · [Dansk version](Manual-da.md)*
+*Version 1.0.6 · [Dansk version](Manual-da.md)*
 
 Artilody Tracker is a pattern-based music tracker. Music is written as notes in vertical columns that are
 played line by line from top to bottom. Unlike most trackers, every track has its own **channel strip**
@@ -66,7 +66,7 @@ If the sound crackles or stutters, increase the **buffer size** (for example 512
 | **Sequence** | The order of patterns in the song (order list). The same pattern can be used several times. |
 | **BPM** | Tempo in beats per minute. |
 | **LPB** | *Lines per beat* – how many lines make up one beat. At LPB 4, each line is a 1/16 note. |
-| **Edit mode** | With edit mode on, keys are written into the pattern. Otherwise they only play the note. |
+| **Edit mode** | With edit mode on you can write into the pattern: click a note field to choose a note, or play a MIDI keyboard. |
 
 All numbers in patterns (instrument, volume and effect values) are shown in **hexadecimal** (00–FF), as is
 customary in trackers.
@@ -93,6 +93,8 @@ customary in trackers.
 - **Toolbar**:
   - **+ Add Track**
   - **Columns − / +**: number of note columns on the selected track
+  - **Edit: On / Off**: turns edit mode on and off (red when on)
+  - **Loop: On / Off**: turns loop on and off (green when on)
   - an info box with the pattern's number and name, plus the cursor's track and line
   - **Collapse FX lists** and **Hide Mixer / Show Mixer**
 - **Left column**: the sequence list (*Seq*), line numbers (hex) and, at the bottom, the **master strip**.
@@ -109,13 +111,13 @@ When **edit mode** is on, the grid gets a red frame and the cursor turns red.
 | Button / field | Function |
 |---|---|
 | **Rewind** | Goes to the start of the song (sequence slot 0, line 0) without starting playback. |
-| **Play** | Plays the song from the selected sequence slot (**Space**). |
-| **Loop** | Loops the current pattern (**Shift+Space**). |
-| **Stop** | Stops and silences all notes. |
+| **Play** | Plays the song (**Space**). After **Stop** it continues from where it stopped. If you have selected another sequence slot in the meantime, it starts there. |
+| **Loop** (circular arrow) | Turns loop on/off, like **Loop: On / Off** in the toolbar. See below. |
+| **Stop** | Stops and silences all notes. The position is remembered, so **Play** continues from there. |
 | **Record** | Toggles edit mode (**Esc**). |
 | **BPM** | Tempo, 20–999. Shows the current tempo during playback, including changes made by `Txx` effects. |
 | **LPB** | Lines per beat, 1–32. |
-| **Oct** | Base octave for the keyboard, 0–9 (default 4). |
+| **Oct** | Default octave for the *Choose note* window, 0–9 (default 4). |
 | **Step** | Edit step, 0–16: how many lines the cursor moves after you enter a value. 0 = it stays put. |
 | **Follow** | When on, the grid follows playback. |
 | **MASTER / CPU** | Level meter for the master output, and the audio engine's CPU load. |
@@ -128,6 +130,19 @@ The **number fields** (BPM, LPB, Oct, Step) can be changed in four ways:
 - **Scroll** with the mouse wheel (±1).
 - **Click** once to pick a preset value from a menu.
 - **Double-click** to type an exact value.
+
+**Loop:** The **Loop: On / Off** button in the toolbar (and the circular arrow in the top bar) turns loop on
+and off. The button is green when loop is on.
+
+- With loop on, **Play** repeats the current pattern instead of playing the whole song.
+- To loop only some rows, drag with the mouse over the **row numbers** to the left of the grid. The rows are
+  marked with a green band, and the loop button shows them, for example *Loop: On 04-0B*.
+- Rows off screen: drag past the top or bottom row and the grid scrolls along. Or click the first row, scroll
+  down (with the mouse wheel over the grid or the row numbers) and **Shift+click** the last row.
+- You can turn loop on and off and mark new rows while the music plays. It switches straight away.
+- Double-click the row numbers (or right-click → *Clear loop rows*) to remove the marking, so the whole
+  pattern loops again.
+- **Shift+Space** turns loop on and starts playback.
 
 **Playback from the keyboard:**
 
@@ -197,31 +212,44 @@ Lines that start a beat (every LPB-th line) have a lighter background and a bold
 
 ### Entering notes
 
-1. Press **Esc** to turn on edit mode (red frame).
-2. Play on the computer keyboard, which is laid out like a piano:
+1. Turn on edit mode with the **Edit** button in the toolbar or with **Esc**. The grid gets a red frame.
+2. Click a note field. A small window, **Choose note**, opens with octave buttons (1–8) and a one-octave
+   keyboard:
+   - Click a key to select and hear the note. The top-right corner shows the note, for example `C-3`.
+   - Click an octave button to choose the octave.
+   - **Insert note** (or **Return**) writes the note. Double-clicking a key writes it straight away.
+   - **Note off** writes **OFF**: the previous note in the column is released.
+   - **Cancel**, the cross or **Esc** closes the window without writing anything.
+   - The keyboard works in the window too: **←/→** chooses the note, **↑/↓** the octave.
 
-```
-Upper row (octave +1):   2 3   5 6 7   9 0
-                        Q W E R T Y U I O P
-Lower row (base octave):  S D   G H J   L
-                        Z X C V B N M , .
-```
+The window starts in the octave the field already has, otherwise in the default octave (*Oct* in the top
+bar, which also follows the last octave you picked). After a note is written, the cursor moves *Step* lines
+down.
 
-- **Z** = C in the base octave (*Oct*), **S** = C#, **X** = D … **M** = B.
-- **Q** = C one octave higher.
-- **1** or **A** writes **OFF**: the previous note in the column is released.
-- With the default octave 4, **Z** = `C-4` and **Q** = `C-5`.
-- Change octave with **F1/F2** or **Num / / Num \***.
+The computer keyboard is no longer used to play notes, because its keys don't match the note names.
 
-Notes are always heard, even without edit mode, but they are only written into the pattern when edit mode
-is on. After a note is written, the cursor moves *Step* lines down.
+**MIDI keyboard:** All MIDI inputs are active, including keyboards connected while the program is running.
+Notes always play on the cursor's track. In edit mode they are written at the cursor with the velocity as
+the Vol value, and the cursor moves *Step* lines down. If you hold several keys at once, the chord is
+written into the next note columns on the same line, if the track has more columns.
 
-**MIDI keyboard:** All MIDI inputs are active. Notes play on the cursor's track, and in edit mode they are
-written with the velocity as the Vol value.
+### Instrument, volume and effect with the mouse
+
+In edit mode, clicking the other fields also opens a small window that fits the field:
+
+| Field | Window |
+|---|---|
+| **Ins** | **Choose instrument**: a list of all tracks with colour, name and instrument. Click to select; double-click or **Use instrument** to write it. **Clear** empties the field so the note plays on the track's own instrument. |
+| **Vol** | **Volume**: a volume slider (00–7F) with a large bar showing the value in hex, percent and dB. **−/+** and the arrow keys change it in steps of 1 (Shift = 16), and the *pp, p, mf, f, ff* buttons give fixed levels. **Clear** gives the default velocity. |
+| **FX** | **Effect**: choose a command (Tempo, Lines/beat, Delay, Cut, Retrigger, Pitch bend, Modulation, Jump). Below the buttons it says what the effect does and what the value means, for example *120 BPM* or *Delay by 50 % of a line*. The value is set with a slider in a range that suits the command. Retrigger has two sliders: how often the note repeats and how much its volume falls. **Clear** removes the effect. |
+
+The top-right corner of the window shows the value that will be written, for example `03`, `50` or `T78`.
+**Return** writes it, **Esc** closes. After writing, the cursor moves *Step* lines down.
 
 ### Hex values
 
-Put the cursor in the Ins, Vol or FX value field and type **0–9** and **A–F**:
+You can also type values directly. Put the cursor in the Ins, Vol or FX value field and type **0–9** and
+**A–F**:
 
 - Each field has two digits (high and low). The cursor moves down after each digit.
 - In the FX command field you type a letter, for example **T** or **D**.
@@ -415,20 +443,49 @@ saved in the project. Plug-ins without their own editor get a simple parameter e
 
 ## 12. Built-in effects
 
-Click **EQ**, **Comp** or **Reverb** on a strip to open the effect's editor:
+Click **EQ**, **Comp** or **Reverb** on a strip to open the effect's editor. The effect turns on
+automatically when you change something.
 
-- The effect turns on automatically when you turn a knob.
+### Parametric EQ
+
+The EQ is a parametric EQ with up to **8 freely placed bands**. Each band is an IIR biquad filter. The graph
+shows frequency (20 Hz–20 kHz) horizontally and gain (±24 dB) vertically. The thick line is the total
+response, and each band has its own numbered point and colour.
+
+| Action | Function |
+|---|---|
+| **Click on the line** | Inserts a point at that frequency. It starts at 0 dB, so the sound doesn't change until you drag it. Keep the button down to drag it straight away. |
+| **Double-click** in the graph | Inserts a point at the mouse. |
+| **Drag** a point | Horizontal = frequency, vertical = gain. |
+| **Shift + drag** | Fine adjustment (10 times slower) to hit a value precisely. |
+| **Mouse wheel** over a point | Changes Q (bandwidth). With Shift in small steps. |
+| **Double-click** a point | Deletes the band. |
+| **Right-click** a point | Choose the type, reset gain or Q, or delete the band. |
+| **Reset** | Removes all bands. |
+
+The panel below the graph shows the selected band: type, **Frequency**, **Gain** and **Q / Width**. Click the
+number below a knob to type an exact value, for example `1.25k`. Double-clicking a knob resets it.
+
+| Type | Effect | Vertical drag |
+|---|---|---|
+| Bell | Boosts or cuts around the frequency | Gain |
+| Low Shelf / High Shelf | Boosts or cuts everything below / above the frequency | Gain |
+| Low Cut / High Cut | Removes everything below / above the frequency (12 dB/octave) | Q (resonance) |
+| Notch | Removes a narrow frequency completely | Q (width) |
+
+| Parameter | Range |
+|---|---|
+| Frequency | 20 Hz – 20 kHz |
+| Gain | −24 – +24 dB |
+| Q | 0.1 – 18 |
+
+When a point is moved during playback, the filter glides smoothly to the new setting (about 25 ms), so it
+does not click.
+
+### Compressor and Reverb
+
 - Double-clicking a knob resets it.
 - **Reset** sets all knobs back to their defaults.
-
-**EQ** (low cut + 3 bands) shows a frequency curve with the result:
-
-| Parameter | Range | Default |
-|---|---|---|
-| Low Cut | 20–1000 Hz | 20 Hz (off) |
-| Low Freq / Low Gain | 30–600 Hz / ±18 dB | 120 Hz / 0 dB |
-| Mid Freq / Mid Gain / Mid Q | 200–8000 Hz / ±18 dB / 0.2–6 | 1 kHz / 0 dB / 0.9 |
-| High Freq / High Gain | 2–16 kHz / ±18 dB | 8 kHz / 0 dB |
 
 **Compressor** has a gain-reduction meter:
 
@@ -507,10 +564,10 @@ On macOS, use **Cmd** instead of **Ctrl**.
 | Key | Function |
 |---|---|
 | Esc | Edit mode on/off |
-| Space / Shift+Space | Play song / loop pattern (stop if playing) |
+| Space / Shift+Space | Play (continue) song / loop pattern or loop rows (stop if playing) |
 | Enter | Play from the cursor's line |
-| Z…M, Q…P | Notes (two octaves) |
-| A or 1 | Note off |
+| Click a field (edit mode) | Window for note, instrument, volume or effect |
+| MIDI keyboard (edit mode) | Enter notes (several keys = chord) |
 | 0–9, A–F | Hex values in Ins / Vol / FX |
 | Arrow keys, Tab, PgUp/PgDn, Home/End | Navigation |
 | Shift + arrow keys / mouse drag | Selection |
@@ -519,8 +576,8 @@ On macOS, use **Cmd** instead of **Ctrl**.
 | Ctrl+A | Select the whole track |
 | Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) | Undo / redo |
 | Ctrl+↑/↓ (+Shift = octave) | Transpose |
-| Num \* / F2 | Octave up |
-| Num / / F1 | Octave down |
+| Num \* / F2 | Default octave up |
+| Num / / F1 | Default octave down |
 | Ctrl+N / O / S / Shift+S | New, open, save, save as |
 | Ctrl+I / Ctrl+E | Open audio file as instrument / export audio |
 | Ctrl+T / M / P / Q | New track, mixer, plug-in manager, quit |
@@ -557,7 +614,7 @@ processed with XML tools. The root element is `ARTILODY_PROJECT`.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<ARTILODY_PROJECT version="1.0.3">
+<ARTILODY_PROJECT version="1.0.6">
   <SONG title="…" bpm="128.0" lpb="4" sequence="0,0,1">
     <TRACKS>
       <TRACK … />            <!-- one per track, in order -->
@@ -685,14 +742,33 @@ attribute (0/1).
 
 #### `BUILTINS`
 
-Contains three `FX` elements for the built-in effects. Each has `name`, `enabled` (0/1) and one attribute
-per parameter:
+Contains three `FX` elements for the built-in effects. Each has `name` and `enabled` (0/1).
+
+`Compressor` and `Reverb` have one attribute per parameter:
 
 | `name` | Parameters (attribute name = value) |
 |---|---|
-| `EQ` | `lowcut`, `lowfreq`, `lowgain`, `midfreq`, `midgain`, `midq`, `hifreq`, `higain` (Hz / dB / Q) |
 | `Compressor` | `threshold` (dB), `ratio`, `attack` (ms), `release` (ms), `knee` (dB), `makeup` (dB) |
 | `Reverb` | `size`, `damping`, `width`, `mix` (0–1) |
+
+`EQ` instead has one `BAND` child element per band (at most 8):
+
+```xml
+<FX name="EQ" enabled="1">
+  <BAND type="lowcut" freq="40.0" gain="0.0" q="0.7071"/>
+  <BAND type="bell" freq="2500.0" gain="5.0" q="0.8"/>
+</FX>
+```
+
+| Attribute | Meaning |
+|---|---|
+| `type` | `bell`, `lowshelf`, `highshelf`, `lowcut`, `highcut` or `notch` |
+| `freq` | Frequency in Hz (20–20000) |
+| `gain` | Gain in dB (−24–24). Only used by `bell` and the shelf types |
+| `q` | Q / bandwidth (0.1–18) |
+
+Files from version 1.0.0–1.0.5 stored the EQ as fixed attributes (`lowcut`, `lowfreq`, `lowgain`, `midfreq`,
+`midgain`, `midq`, `hifreq`, `higain`). They still load and are converted to bands automatically.
 
 Ranges and default values are listed in section 12. If a parameter is missing, its default value is used.
 
@@ -714,7 +790,7 @@ match.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<ARTILODY_PROJECT version="1.0.3">
+<ARTILODY_PROJECT version="1.0.6">
   <SONG title="Mini" bpm="120.0" lpb="4" sequence="0">
     <TRACKS>
       <TRACK name="Piano" colour="ff2f7bf0" columns="1" uid="1"/>

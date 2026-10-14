@@ -231,7 +231,11 @@ void StripProcessor::process (juce::AudioBuffer<float>& io, juce::MidiBuffer& mi
     float* L = io.getWritePointer (0);
     float* R = io.getWritePointer (1);
 
-    if (eq.enabled.load())     eq.process (L, R, n);
+    const bool eqOn = eq.enabled.load();
+    if (eqOn && ! eqWasEnabled)
+        eq.reset();   // start from the current settings with clean filter memory (no click)
+    eqWasEnabled = eqOn;
+    if (eqOn)                  eq.process (L, R, n);
     if (comp.enabled.load())   comp.process (L, R, n);
     if (reverb.enabled.load()) reverb.process (L, R, n);
 

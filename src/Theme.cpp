@@ -124,11 +124,16 @@ namespace Theme
                 break;
             case Icon::Loop:
             {
-                auto rr = b.reduced (s * 0.22f);
-                p.addRoundedRectangle (rr, s * 0.15f);
+                // circular "repeat" arrow
+                const float cx = b.getCentreX(), cy = b.getCentreY(), rad = s * 0.27f;
+                const float a0 = juce::MathConstants<float>::pi * 0.3f, a1 = juce::MathConstants<float>::pi * 1.75f;
+                p.addCentredArc (cx, cy, rad, rad, 0.0f, a0, a1, true);
                 stroke (p);
+                const juce::Point<float> end (cx + rad * std::sin (a1), cy - rad * std::cos (a1));
+                const juce::Point<float> tangent (std::cos (a1), std::sin (a1)), radial (std::sin (a1), -std::cos (a1));
+                const float h = s * 0.17f;
                 juce::Path a;
-                a.addTriangle (rr.getRight() - s * 0.12f, rr.getY() - s * 0.1f, rr.getRight() - s * 0.12f, rr.getY() + s * 0.1f, rr.getRight() + s * 0.05f, rr.getY());
+                a.addTriangle (end + tangent * h, end + radial * (h * 0.75f), end - radial * (h * 0.75f));
                 g.fillPath (a);
                 break;
             }

@@ -41,7 +41,7 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
-    std::function<void()> onPlaySong, onPlayPattern, onStop, onRewind;
+    std::function<void()> onPlaySong, onToggleLoop, onStop, onRewind;
     std::function<void()> onUndo, onRedo;
 
     void updateState();
@@ -52,8 +52,19 @@ private:
 
     AppContext& ctx;
     IconButton rewindButton { "Rewind", Theme::Icon::Rewind }, playButton { "Play", Theme::Icon::Play },
-               loopButton { "Loop pattern", Theme::Icon::Loop }, stopButton { "Stop", Theme::Icon::Stop },
-               recordButton { "Edit mode", Theme::Icon::Record };
+               loopButton { "Loop pattern", Theme::Icon::Loop }, stopButton { "Stop", Theme::Icon::Stop };
+
+    /** Big round record (edit mode) button that glows and pulses while recording. */
+    class RecordButton final : public juce::Button, private juce::Timer
+    {
+    public:
+        RecordButton() : juce::Button ("Edit mode") {}
+        void paintButton (juce::Graphics&, bool highlighted, bool down) override;
+        void setRecording (bool);
+    private:
+        void timerCallback() override { phase += 0.06f; if (phase > juce::MathConstants<float>::twoPi) phase -= juce::MathConstants<float>::twoPi; repaint(); }
+        float phase = 0.0f;
+    } recordButton;
     NumberBox bpmBox { "BPM", 20, 999, 1 }, lpbBox { "LPB", 1, 32, 1 }, octBox { "Oct", 0, 9, 1 }, stepBox { "Step", 0, 16, 1 };
     IconButton followButton { "Follow", Theme::Icon::Follow };
     IconButton undoButton { "Undo", Theme::Icon::Undo }, redoButton { "Redo", Theme::Icon::Redo };

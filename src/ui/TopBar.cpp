@@ -84,33 +84,34 @@ TopBar::TopBar (AppContext& c) : ctx (c)
     playButton.fill = Theme::accent;
     playButton.iconColour = juce::Colours::white;
     playButton.onFill = Theme::accent.darker (0.15f);
-    recordButton.fill = juce::Colour (0xffffe3e6);
-    recordButton.iconColour = Theme::record;
-    recordButton.onFill = Theme::record;
+    stopButton.fill = Theme::record;
+    stopButton.iconColour = juce::Colours::white;
+    stopButton.onFill = Theme::record.darker (0.15f);
     loopButton.onFill = Theme::accentBlue;
     followButton.onFill = Theme::accentBlue;
 
     rewindButton.setTooltip ("Go to the start of the song (does not start playback)");
-    playButton.setTooltip ("Play song from the selected sequence slot (Space)");
-    loopButton.setTooltip ("Loop the current pattern (Shift+Space)");
-    stopButton.setTooltip ("Stop");
-    recordButton.setTooltip ("Edit mode - type notes into the pattern (Esc)");
+    playButton.setTooltip ("Play the song (Space). After Stop it continues from where it stopped.");
+    loopButton.setTooltip ("Loop on / off. When on, playback repeats the current pattern - or only the rows you mark by dragging over the row numbers.");
+    stopButton.setTooltip ("Stop - Play continues from here, Rewind goes back to the start");
+    recordButton.setTooltip ("Edit mode on / off (Esc) - click a field or play a MIDI keyboard to write into the pattern");
     followButton.setTooltip ("Follow playback");
     undoButton.setTooltip ("Undo (Ctrl+Z)");
     redoButton.setTooltip ("Redo (Ctrl+Y)");
 
-    for (auto* b : { &rewindButton, &playButton, &loopButton, &stopButton, &recordButton, &followButton,
+    for (auto* b : { &rewindButton, &playButton, &loopButton, &stopButton, &followButton,
                      &undoButton, &redoButton })
     {
         b->radius = 10.0f;
         addAndMakeVisible (b);
     }
+    addAndMakeVisible (recordButton);
     for (auto* b : { &undoButton, &redoButton })
         b->fill = Theme::panel;
 
     rewindButton.onClick = [this] { if (onRewind) onRewind(); };
     playButton.onClick = [this] { if (onPlaySong) onPlaySong(); };
-    loopButton.onClick = [this] { if (onPlayPattern) onPlayPattern(); };
+    loopButton.onClick = [this] { if (onToggleLoop) onToggleLoop(); };
     stopButton.onClick = [this] { if (onStop) onStop(); };
     recordButton.onClick = [this] { ctx.state.editMode = ! ctx.state.editMode; ctx.state.changed(); };
     followButton.onClick = [this] { ctx.state.followPlayback = ! ctx.state.followPlayback; ctx.state.changed(); };
@@ -150,15 +151,64 @@ void TopBar::changeListenerCallback (juce::ChangeBroadcaster*) { updateState(); 
 
 void TopBar::updateState()
 {
-    playButton.setToggleState (ctx.engine.isPlaying() && ! ctx.engine.isLoopingPattern(), juce::dontSendNotification);
-    loopButton.setToggleState (ctx.engine.isPlaying() && ctx.engine.isLoopingPattern(), juce::dontSendNotification);
-    recordButton.setToggleState (ctx.state.editMode, juce::dontSendNotification);
+    playButton.setToggleState (ctx.engine.isPlaying(), juce::dontSendNotification);
+    loopButton.setToggleState (ctx.state.loopEnabled, juce::dontSendNotification);
+    recordButton.setRecording (ctx.state.editMode);
     followButton.setToggleState (ctx.state.followPlayback, juce::dontSendNotification);
     undoButton.setEnabled (ctx.undo.canUndo());
     redoButton.setEnabled (ctx.undo.canRedo());
     for (auto* b : { &bpmBox, &lpbBox, &octBox, &stepBox })
         b->repaint();
     repaint();
+}
+
+//==============================================================================
+void TopBar::RecordButton::setRecording (bool on)
+{
+    if (on == getToggleState()) return;
+    setToggleState (on, juce::dontSendNotification);
+    if (on) startTimerHz (30);
+    else  { stopTimer(); phase = 0.0f; }
+    repaint();
+}
+
+void TopBar::RecordButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
+{
+    const bool on = getToggleState();
+    auto b = getLocalBounds().toFloat();
+    const float d = juce::jmin (b.getWidth(), b.getHeight()) - 10.0f;   // room for the glow
+    auto circle = juce::Rectangle<float> (d, d).withCentre (b.getCentre());
+    const auto red = Theme::record;
+
+    if (on)
+    {
+        // pulsing glow around the button
+        const float pulse = 0.5f + 0.5f * std::sin (phase);
+        for (int i = 4; i >= 1; --i)
+        {
+            g.setColour (red.withAlpha ((0.22f + 0.22f * pulse) / (float) i));
+            g.fillEllipse (circle.expanded (1.2f * (float) i + 1.0f * pulse));
+        }
+        // bright red body with a highlight
+        juce::ColourGradient grad (juce::Colour (0xffff8a96).interpolatedWith (red, 0.3f * (1.0f - pulse)), circle.getCentreX(), circle.getY() + d * 0.3f,
+                                   red, circle.getCentreX(), circle.getBottom(), true);
+        g.setGradientFill (grad);
+        g.fillEllipse (circle);
+        g.setColour (juce::Colours::white.withAlpha (0.85f));
+        g.drawEllipse (circle.reduced (1.0f), 2.0f);
+        // white "recording" dot
+        g.setColour (juce::Colours::white);
+        g.fillEllipse (circle.withSizeKeepingCentre (d * 0.34f, d * 0.34f));
+    }
+    else
+    {
+        g.setColour (down ? juce::Colour (0xffffd4d9) : (highlighted ? juce::Colour (0xffffe9ec) : Theme::panel));
+        g.fillEllipse (circle);
+        g.setColour (red.withAlpha (highlighted ? 0.9f : 0.55f));
+        g.drawEllipse (circle.reduced (1.0f), 2.0f);
+        g.setColour (red);
+        g.fillEllipse (circle.withSizeKeepingCentre (d * 0.42f, d * 0.42f));
+    }
 }
 
 void TopBar::timerCallback()
@@ -178,9 +228,14 @@ void TopBar::resized()
     r.removeFromLeft (10);
     place (rewindButton, 44, 6);
     place (playButton, 52, 6);
-    place (loopButton, 44, 6);
     place (stopButton, 44, 6);
-    place (recordButton, 44, 18);
+    place (loopButton, 44, 6);
+    // the record button is bigger than the others: it uses the full height of the bar
+    {
+        auto rb = r.removeFromLeft (60);
+        recordButton.setBounds (rb.getX(), 0, rb.getWidth(), getHeight());
+        r.removeFromLeft (12);
+    }
     place (bpmBox, 78);
     place (lpbBox, 62);
     place (octBox, 62);

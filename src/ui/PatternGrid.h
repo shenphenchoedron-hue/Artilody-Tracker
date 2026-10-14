@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AppContext.h"
+#include "CellPickers.h"
 
 namespace artilody
 {
@@ -21,8 +22,11 @@ public:
     int getNumVisibleRows() const { return juce::jmax (1, getHeight() / Layout::rowHeight); }
     int getDisplayedPlayRow() const;
 
-    void enterMidiNote (int note, int velocity);
+    /** MIDI keyboard input (edit mode): writes notes at the cursor; held keys form chords across note columns. */
+    void enterMidiNote (int note, int velocity, bool isNoteOn);
     void moveCursorRow (int delta);
+    /** Scrolls the view (moves the cursor) without wrapping around at the first / last row. */
+    void scrollRows (int delta);
     void setCursor (int track, int column, int field, int row);
 
     std::function<void()> onViewChanged;          // scroll / cursor moved
@@ -32,10 +36,10 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void mouseDown (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
     void mouseDrag (const juce::MouseEvent&) override;
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
     bool keyPressed (const juce::KeyPress&) override;
-    bool keyStateChanged (bool isKeyDown) override;
     void focusGained (FocusChangeType) override { repaint(); }
     void focusLost (FocusChangeType) override   { repaint(); }
 
@@ -61,10 +65,14 @@ private:
     void afterCursorMove (bool extendSelection);
     void notifyCursorTrack (int oldTrack);
 
-    bool handleNoteKey (const juce::KeyPress&);
     bool handleHexKey (const juce::KeyPress&);
     void writeNote (int note, int velocity, bool advance);
-    void previewNote (int note, float velocity);
+    int previewInstrument() const;
+    /** Opens the pop-up editor for the cursor's field (note, instrument, volume or effect). */
+    void showFieldPicker (int field, juce::Rectangle<int> screenArea);
+    void showNotePicker (juce::Rectangle<int> screenArea);
+    /** Applies an edit to the cursor cell as one undo step and moves down by the edit step. */
+    void editCursorCell (const juce::String& undoName, const std::function<void (Cell&)>& edit);
 
     void insertRow();
     void deleteRow();
@@ -82,8 +90,8 @@ private:
     int lastPlayRow = -1, lastPlaySeq = -1;
     int dragAnchorTrack = 0, dragAnchorCol = 0, dragAnchorRow = 0;
 
-    struct HeldKey { int keyCode; int note; int track; };
-    std::vector<HeldKey> heldKeys;
+    std::vector<int> midiHeld;                 // MIDI notes currently held (for chord entry)
+    int chordRow = -1, chordTrack = -1, chordNextColumn = 0;
 
     std::vector<std::vector<Cell>> clipboard; // [column][row]
 

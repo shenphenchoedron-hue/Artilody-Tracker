@@ -184,6 +184,20 @@ void PatternGrid::paint (juce::Graphics& g)
     int sr0 = 0, sr1 = -1;
     if (st.hasSelection) getSelectionRows (sr0, sr1);
 
+    int loopFirst = -1, loopLast = -1;
+    const bool loopActive = ctx.engine.isPlaying() && ctx.engine.isLoopingPattern() && ctx.engine.loopFirstRow.load() >= 0
+                            && ctx.engine.playSeqIndex.load() == st.seqSlot;
+    if (loopActive)
+    {
+        loopFirst = ctx.engine.loopFirstRow.load();
+        loopLast = ctx.engine.loopLastRow.load();
+    }
+    else if (st.hasLoopRange (st.pattern))
+    {
+        loopFirst = st.loopFirst;
+        loopLast = st.loopLast;
+    }
+
     // NB: no song.lock here. Pattern data is only ever modified on the message thread
     // (which is the thread painting), and the audio thread only reads it. Holding the
     // lock while drawing hundreds of text runs blocked the real-time audio callback for
@@ -199,6 +213,16 @@ void PatternGrid::paint (juce::Graphics& g)
         const bool beat = (r % lpb) == 0;
         g.setColour (beat ? Theme::gridBeat : ((r & 1) ? Theme::gridRow : Theme::gridRowAlt));
         g.fillRect (0, y, totalWidth, rowH);
+
+        // rows of an active row-range loop
+        if (loopFirst >= 0 && r >= loopFirst && r <= loopLast)
+        {
+            g.setColour (Theme::accent.withAlpha (loopActive ? 0.12f : 0.06f));
+            g.fillRect (0, y, totalWidth, rowH);
+            g.setColour (Theme::accent.withAlpha (loopActive ? 0.9f : 0.45f));
+            if (r == loopFirst) g.fillRect (0, y, totalWidth, 2);
+            if (r == loopLast)  g.fillRect (0, y + rowH - 2, totalWidth, 2);
+        }
 
         for (int t = 0; t < (int) song.tracks.size() && t < (int) pat->tracks.size(); ++t)
         {
@@ -417,6 +441,20 @@ void PatternGrid::mouseDown (const juce::MouseEvent& e)
     setCursor (h.track, h.column, h.field, h.row);
 }
 
+void PatternGrid::mouseUp (const juce::MouseEvent& e)
+{
+    // A plain click on a note field in edit mode opens the note picker.
+    if (! e.mouseWasClicked() || e.mods.isPopupMenu() || e.mods.isShiftDown() || e.mods.isCommandDown())
+        return;
+    auto& st = ctx.state;
+    if (! st.editMode || st.hasSelection) return;
+    auto h = hitTest (e.getMouseDownPosition());
+    if (h.track < 0) return;
+
+    const auto pos = e.getMouseDownScreenPosition();
+    showFieldPicker (h.field, { pos.x - 12, pos.y - Layout::rowHeight / 2, 24, Layout::rowHeight });
+}
+
 void PatternGrid::mouseDrag (const juce::MouseEvent& e)
 {
     if (e.mods.isPopupMenu()) return;
@@ -454,6 +492,19 @@ void PatternGrid::moveCursorRow (int delta)
     if (r < 0) r = (std::abs (delta) == 1) ? p->numRows - 1 : 0;
     else if (r >= p->numRows) r = (std::abs (delta) == 1) ? 0 : p->numRows - 1;
     st.cursorRow = r;
+    repaint();
+    if (onViewChanged) onViewChanged();
+}
+
+void PatternGrid::scrollRows (int delta)
+{
+    auto* p = ctx.currentPattern();
+    if (p == nullptr) return;
+    auto& st = ctx.state;
+    // the view is centred on the cursor, so first bring the cursor to the centre of the view
+    const int visible = getNumVisibleRows();
+    const int centre = getFirstVisibleRow() + visible / 2;
+    st.cursorRow = juce::jlimit (0, p->numRows - 1, centre + delta);
     repaint();
     if (onViewChanged) onViewChanged();
 }
@@ -515,24 +566,7 @@ void PatternGrid::afterCursorMove (bool extend)
 }
 
 //==============================================================================
-static int noteOffsetForKey (juce::juce_wchar ch)
-{
-    switch (juce::CharacterFunctions::toLowerCase (ch))
-    {
-        case 'z': return 0;  case 's': return 1;  case 'x': return 2;  case 'd': return 3;
-        case 'c': return 4;  case 'v': return 5;  case 'g': return 6;  case 'b': return 7;
-        case 'h': return 8;  case 'n': return 9;  case 'j': return 10; case 'm': return 11;
-        case ',': return 12; case 'l': return 13; case '.': return 14;
-        case 'q': return 12; case '2': return 13; case 'w': return 14; case '3': return 15;
-        case 'e': return 16; case 'r': return 17; case '5': return 18; case 't': return 19;
-        case '6': return 20; case 'y': return 21; case '7': return 22; case 'u': return 23;
-        case 'i': return 24; case '9': return 25; case 'o': return 26; case '0': return 27;
-        case 'p': return 28;
-        default: return -1;
-    }
-}
-
-void PatternGrid::previewNote (int note, float velocity)
+int PatternGrid::previewInstrument() const
 {
     auto& st = ctx.state;
     int inst = st.cursorTrack;
@@ -542,7 +576,108 @@ void PatternGrid::previewNote (int note, float velocity)
         if (c.ins != 0xFF && c.ins >= 1 && c.ins <= ctx.engine.song.numTracks())
             inst = c.ins - 1;
     }
-    ctx.engine.previewNoteOn (inst, note, velocity);
+    return inst;
+}
+
+void PatternGrid::editCursorCell (const juce::String& undoName, const std::function<void (Cell&)>& edit)
+{
+    auto& st = ctx.state;
+    auto* p = ctx.currentPattern();
+    if (p == nullptr || ! st.editMode || ctx.engine.song.tracks.empty()) return;
+
+    ctx.beginPatternEdit();
+    {
+        const juce::ScopedLock sl (ctx.engine.song.lock);
+        edit (p->cell (st.cursorTrack, st.cursorRow, st.cursorColumn));
+    }
+    ctx.endPatternEdit (undoName);
+
+    if (st.editStep > 0) moveCursorRow (st.editStep);
+    else repaint();
+    grabKeyboardFocus();
+}
+
+void PatternGrid::showFieldPicker (int field, juce::Rectangle<int> screenArea)
+{
+    auto& st = ctx.state;
+    auto* p = ctx.currentPattern();
+    auto& song = ctx.engine.song;
+    if (p == nullptr || song.tracks.empty()) return;
+
+    if (field == 0) { showNotePicker (screenArea); return; }
+
+    const auto cell = p->cell (st.cursorTrack, st.cursorRow, st.cursorColumn);
+    juce::Component::SafePointer<PatternGrid> safe (this);
+    std::unique_ptr<juce::Component> content;
+
+    if (field <= 2)
+    {
+        std::vector<InstrumentPicker::Entry> entries;
+        for (int t = 0; t < song.numTracks(); ++t)
+            entries.push_back ({ song.tracks[(size_t) t].name, ctx.engine.getStrip (t).getInstrumentName(), song.tracks[(size_t) t].colour });
+        auto picker = std::make_unique<InstrumentPicker> (std::move (entries), cell.ins == 0xFF ? 0 : cell.ins, st.cursorTrack + 1);
+        picker->onInsert = [safe] (int ins)
+        {
+            if (safe != nullptr)
+                safe->editCursorCell ("Set instrument", [ins] (Cell& c) { c.ins = ins <= 0 ? (uint8_t) 0xFF : (uint8_t) juce::jmin (0xFE, ins); });
+        };
+        content = std::move (picker);
+    }
+    else if (field <= 4)
+    {
+        auto picker = std::make_unique<VolumePicker> (cell.vol == 0xFF ? -1 : cell.vol);
+        picker->onInsert = [safe] (int vol)
+        {
+            if (safe != nullptr)
+                safe->editCursorCell ("Set volume", [vol] (Cell& c) { c.vol = vol < 0 ? (uint8_t) 0xFF : (uint8_t) juce::jlimit (0, 0x7F, vol); });
+        };
+        content = std::move (picker);
+    }
+    else
+    {
+        auto picker = std::make_unique<EffectPicker> (cell.fxCmd, cell.fxVal);
+        picker->onInsert = [safe] (char cmd, int value)
+        {
+            if (safe != nullptr)
+                safe->editCursorCell ("Set effect", [cmd, value] (Cell& c) { c.fxCmd = cmd; c.fxVal = (uint8_t) (cmd == 0 ? 0 : juce::jlimit (0, 0xFF, value)); });
+        };
+        content = std::move (picker);
+    }
+
+    juce::CallOutBox::launchAsynchronously (std::move (content), screenArea, nullptr);
+}
+
+void PatternGrid::showNotePicker (juce::Rectangle<int> screenArea)
+{
+    auto& st = ctx.state;
+    auto* p = ctx.currentPattern();
+    if (p == nullptr || ctx.engine.song.tracks.empty()) return;
+
+    const int current = p->cell (st.cursorTrack, st.cursorRow, st.cursorColumn).note;
+    auto picker = std::make_unique<NotePicker> (current >= 0 ? current : -1, st.octave);
+    const int inst = previewInstrument();
+    juce::Component::SafePointer<PatternGrid> safe (this);
+
+    picker->onPreview = [safe, inst] (int note, bool down)
+    {
+        if (safe == nullptr) return;
+        if (down) safe->ctx.engine.previewNoteOn (inst, note, 0.8f);
+        else      safe->ctx.engine.previewNoteOff (inst, note);
+    };
+    picker->onInsert = [safe] (int note)
+    {
+        if (safe == nullptr) return;
+        if (note >= 0)
+        {
+            safe->ctx.state.octave = note / 12;   // the next pick starts in the same octave
+            safe->ctx.state.changed();
+        }
+        safe->ctx.state.cursorField = 0;
+        safe->writeNote (note, -1, true);
+        safe->grabKeyboardFocus();
+    };
+
+    juce::CallOutBox::launchAsynchronously (std::move (picker), screenArea, nullptr);
 }
 
 void PatternGrid::writeNote (int note, int velocity, bool advance)
@@ -569,62 +704,40 @@ void PatternGrid::writeNote (int note, int velocity, bool advance)
         repaint();
 }
 
-void PatternGrid::enterMidiNote (int note, int velocity)
+void PatternGrid::enterMidiNote (int note, int velocity, bool isNoteOn)
 {
-    if (! ctx.state.editMode) return;
-    ctx.state.cursorField = 0;
-    writeNote (note, velocity, true);
-}
-
-bool PatternGrid::handleNoteKey (const juce::KeyPress& key)
-{
+    if (! isNoteOn)
+    {
+        midiHeld.erase (std::remove (midiHeld.begin(), midiHeld.end(), note), midiHeld.end());
+        return;
+    }
+    if (note < 0 || note > 119) return;   // the pattern stores C-0 .. B-9
     auto& st = ctx.state;
-    const auto ch = key.getTextCharacter();
+    if (! st.editMode || ! juce::isPositiveAndBelow (st.cursorTrack, ctx.engine.song.numTracks())) return;
 
-    if (ch == '1' || ch == 'a' || ch == 'A')
+    // Keys pressed while others are still held form a chord: they go into the next note
+    // columns of the row where the chord started (if the track has more columns).
+    const int columns = ctx.engine.song.tracks[(size_t) st.cursorTrack].noteColumns;
+    if (! midiHeld.empty() && chordRow >= 0 && chordTrack == st.cursorTrack && chordNextColumn < columns)
     {
-        writeNote (kNoteOff, -1, true);
-        return true;
+        const int row = st.cursorRow, col = st.cursorColumn;
+        st.cursorRow = chordRow;
+        st.cursorColumn = chordNextColumn++;
+        st.cursorField = 0;
+        writeNote (note, velocity, false);
+        st.cursorRow = row;
+        st.cursorColumn = col;
+        repaint();
     }
-
-    const int off = noteOffsetForKey (ch);
-    if (off < 0) return false;
-
-    for (auto& h : heldKeys)
-        if (h.keyCode == key.getKeyCode())
-            return true; // auto-repeat
-
-    const int note = juce::jlimit (0, 119, st.octave * 12 + off);
-    previewNote (note, 0.8f);
-
-    int inst = st.cursorTrack;
-    if (auto* p = ctx.currentPattern())
+    else
     {
-        const auto& c = p->cell (st.cursorTrack, st.cursorRow, st.cursorColumn);
-        if (c.ins != 0xFF && c.ins >= 1 && c.ins <= ctx.engine.song.numTracks())
-            inst = c.ins - 1;
+        chordRow = st.cursorRow;
+        chordTrack = st.cursorTrack;
+        chordNextColumn = st.cursorColumn + 1;
+        st.cursorField = 0;
+        writeNote (note, velocity, true);
     }
-    heldKeys.push_back ({ key.getKeyCode(), note, inst });
-
-    writeNote (note, -1, true);
-    return true;
-}
-
-bool PatternGrid::keyStateChanged (bool)
-{
-    for (size_t i = 0; i < heldKeys.size();)
-    {
-        if (! juce::KeyPress::isKeyCurrentlyDown (heldKeys[i].keyCode))
-        {
-            ctx.engine.previewNoteOff (heldKeys[i].track, heldKeys[i].note);
-            heldKeys.erase (heldKeys.begin() + (long) i);
-        }
-        else
-        {
-            ++i;
-        }
-    }
-    return false;
+    midiHeld.push_back (note);
 }
 
 bool PatternGrid::handleHexKey (const juce::KeyPress& key)
@@ -994,7 +1107,7 @@ bool PatternGrid::keyPressed (const juce::KeyPress& key)
         return false;
 
     if (st.cursorField == 0)
-        return handleNoteKey (key);
+        return false;   // notes are entered with the note picker (click the field) or a MIDI keyboard
 
     return handleHexKey (key);
 }
