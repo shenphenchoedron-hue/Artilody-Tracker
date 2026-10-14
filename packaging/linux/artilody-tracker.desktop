@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Artilody Tracker
+GenericName=Music Tracker
+Comment=Pattern based music tracker with mixer, SoundFont instruments and VST3/CLAP plug-ins
+Exec=artilody-tracker %f
+Icon=artilody-tracker
+Terminal=false
+Categories=AudioVideo;Audio;Music;Midi;Sequencer;
+Keywords=tracker;music;daw;midi;vst3;clap;soundfont;
+StartupWMClass=Artilody Tracker

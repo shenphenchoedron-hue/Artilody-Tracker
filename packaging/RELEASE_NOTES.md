@@ -1,0 +1,30 @@
+## Artilody Tracker
+
+Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channel strip lige under sig.
+
+### Download
+
+| Platform | Fil |
+|----------|-----|
+| Windows 10/11 (64-bit) | `ArtilodyTracker-*-Windows-x64-Setup.exe` (installer) eller `*-portable.zip` |
+| macOS 11+ (Apple Silicon + Intel) | `ArtilodyTracker-*-macOS-universal.dmg` |
+| Debian 12 | `artilody-tracker_*_debian12_amd64.deb` |
+| Ubuntu 22.04 | `artilody-tracker_*_ubuntu22.04_amd64.deb` |
+| Ubuntu 24.04 | `artilody-tracker_*_ubuntu24.04_amd64.deb` |
+
+**Debian / Ubuntu:** `sudo apt install ./artilody-tracker_*_amd64.deb`
+
+**macOS:** Appen er ikke notariseret. Træk den til Programmer, højreklik på den og vælg *Åbn* første gang
+(eller kør `xattr -dr com.apple.quarantine "/Applications/Artilody Tracker.app"`).
+
+**Windows:** SmartScreen kan advare om en ukendt udgiver – vælg *Flere oplysninger → Kør alligevel*.
+
+### Funktioner
+- Tracker-editor med flere note-kolonner pr. track, hex-værdier, effektkommandoer (T, L, D, C, R, P, M, B), copy/paste, transponering og undo
+- Song sequence + pattern-liste med navne, farver, længder og noter
+- Mixer med master channel strip og en channel strip pr. track (kan kollapses)
+- Instrumentvalg: indbyggede Pop-, Rock-, Electro- og Jazz-instrumenter (SoundFont, GeneralUser GS medfølger) eller VST3 / AU / CLAP plug-ins
+- Ubegrænset antal VST3 / AU / CLAP effekter pr. strip – kan flyttes op/ned, bypasses og listen kan kollapses
+- Indbygget EQ, kompressor og reverb pr. strip (tænd/sluk + indstillinger)
+- Panorering, lydstyrke, mute og solo
+- MIDI-keyboard input, projekter (.artilody) og eksport til WAV

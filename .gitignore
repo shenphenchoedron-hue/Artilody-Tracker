@@ -1,0 +1,6 @@
+build/
+build-*/
+soundfonts/*.sf2
+*.user
+.vscode/
+.DS_Store
