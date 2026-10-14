@@ -41,8 +41,10 @@ og en lydfil (WAV/AIFF/FLAC/OGG/MP3) kan åbnes som sampler-instrument på det v
 
 ## Brugermanual
 
-- [Dansk brugermanual](docs/Manual-da.md)
-- [English user manual](docs/Manual-en.md)
+- Dansk brugermanual: [online](docs/Manual-da.md) · [PDF](docs/Manual-da.pdf)
+- English user manual: [online](docs/Manual-en.md) · [PDF](docs/Manual-en.pdf)
+
+PDF-udgaverne genereres fra Markdown-filerne med `docs/tools/build-pdf.sh` (macOS).
 
 Begge manualer har et appendiks, der beskriver opbygningen af `.artixml`-filformatet.
 

@@ -6,8 +6,8 @@ Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channe
 - Projekter gemmes nu som **`.artixml`**, så det er tydeligt, at filen er almindelig XML. Ældre `.artilody`-filer
   kan stadig åbnes og gemmes som `.artixml`.
 - `.artixml` er tilknyttet programmet på Windows og macOS (dobbeltklik åbner projektet).
-- Ny brugermanual på dansk og engelsk (`Manual-da.md` / `Manual-en.md`) med et appendiks, der beskriver
-  `.artixml`-formatet. Manualerne følger med i alle pakker.
+- Ny brugermanual på dansk og engelsk (`Manual-da.pdf` / `Manual-en.pdf`, også som Markdown) med et appendiks,
+  der beskriver `.artixml`-formatet. Manualerne følger med i alle pakker.
 - Rettet hjælpeteksten for oktavskift (F1 = ned, F2 = op).
 
 ### Nyt i 1.0.2
