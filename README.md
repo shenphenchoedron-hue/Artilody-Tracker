@@ -6,7 +6,7 @@ En pattern-baseret music tracker skrevet i C++ med [JUCE](https://juce.com).
 Til forskel fra de fleste trackere har Artilody Tracker en rigtig mixer: når du opretter et track,
 oprettes der automatisk en channel strip **lige under tracket**, som styrer det.
 
-![Artilody Tracker](docs/screenshot.png)
+
 
 ## Funktioner
 
@@ -37,7 +37,8 @@ Appen har en almindelig menulinje (File, Edit, Song, View, Plug-ins, Options, He
 Projekter gemmes som `.artixml` – almindelig XML, inkl. plug-in-tilstand, sange kan eksporteres som WAV, AIFF eller FLAC,
 og en lydfil (WAV/AIFF/FLAC/OGG/MP3) kan åbnes som sampler-instrument på det valgte track.
 
-![Mixer collapsed](docs/screenshot-mixer-collapsed.png)
+
+
 
 ## Brugermanual
 
