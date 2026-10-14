@@ -420,7 +420,7 @@ namespace MenuIds
         mi_undo = 100, mi_redo, mi_cut, mi_copy, mi_paste, mi_del, mi_selectTrack, mi_transposeUp, mi_transposeDown, mi_octaveUp, mi_octaveDown, mi_interpolate, mi_editMode,
         mi_playSong = 200, mi_playFromStart, mi_rewind, mi_playPattern, mi_stop, mi_addTrack, mi_renameSong, mi_followPlayback,
         mi_toggleMixer = 300, mi_collapseFx,
-        mi_pluginManager = 400,
+        mi_pluginManager = 400, mi_scanAllPlugins,
         mi_audioSettings = 500, mi_defaultSoundFont,
         mi_keyboardHelp = 600, mi_about,
         mi_recentBase = 1000
@@ -520,6 +520,7 @@ juce::PopupMenu MainComponent::getMenuForIndex (int index, const juce::String&)
             break;
         case 4:
             item (mi_pluginManager, "Plug-in Manager (scan VST3 / AU / CLAP)...", cmd + "P");
+            item (mi_scanAllPlugins, "Scan for New Plug-ins (all formats)");
             break;
         case 5:
             item (mi_audioSettings, "Audio & MIDI Settings...");
@@ -588,6 +589,7 @@ void MainComponent::menuItemSelected (int id, int)
         case mi_toggleMixer:    mixerButton.triggerClick(); break;
         case mi_collapseFx:     fxListsButton.triggerClick(); break;
         case mi_pluginManager:  PluginHost::get().showPluginManager(); break;
+        case mi_scanAllPlugins: PluginHost::get().showPluginManager (true); break;
         case mi_audioSettings:  showAudioSettings(); break;
         case mi_defaultSoundFont: chooseDefaultSoundFont(); break;
         case mi_keyboardHelp:   showKeyboardHelp(); break;

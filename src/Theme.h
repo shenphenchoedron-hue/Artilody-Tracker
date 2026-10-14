@@ -78,6 +78,10 @@ public:
                         int thumbStart, int thumbSize, bool over, bool down) override;
     int getDefaultScrollbarWidth() override { return 10; }
 
+    void drawTableHeaderBackground (juce::Graphics&, juce::TableHeaderComponent&) override;
+    void drawTableHeaderColumn (juce::Graphics&, juce::TableHeaderComponent&, const juce::String& columnName, int columnId,
+                                int width, int height, bool isMouseOver, bool isMouseDown, int columnFlags) override;
+
     void drawCallOutBoxBackground (juce::CallOutBox&, juce::Graphics&, const juce::Path&, juce::Image&) override;
     void fillTextEditorBackground (juce::Graphics&, int w, int h, juce::TextEditor&) override;
     void drawTextEditorOutline (juce::Graphics&, int w, int h, juce::TextEditor&) override;

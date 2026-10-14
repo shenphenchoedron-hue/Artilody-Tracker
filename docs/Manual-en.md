@@ -391,6 +391,15 @@ Click the instrument button on a channel strip to open the instrument menu.
 
 Open the **Plug-in Manager** with **Ctrl+P** or *Plug-ins → Plug-in Manager…*, and scan for plug-ins:
 
+- **Scan for new plug-ins** at the top of the window scans VST3, AU and CLAP in one go. So does
+  *Plug-ins → Scan for New Plug-ins (all formats)*.
+  - Only new or updated plug-ins are loaded, so a repeat scan is quick.
+  - The window doesn't respond to clicks while a scan runs.
+- The list shows name, format (VST3/AU/CLAP), type, vendor and version. Plug-ins that crashed during
+  scanning are marked **FAILED** and skipped next time. Right-click a plug-in to remove it or show its folder.
+- Under **Options…** you can scan one format at a time and change which folders are scanned. Those folders
+  are also used by *Scan for new plug-ins*.
+
 - **VST3** on all platforms, **Audio Unit** on macOS and **CLAP** on all platforms.
 - CLAP plug-ins are searched for in the standard folders and in folders listed in the `CLAP_PATH`
   environment variable:
@@ -485,7 +494,7 @@ of scanned plug-ins.
 | **Edit** | Undo, Redo, Cut, Copy, Paste, Delete, Select Track Column, Transpose ±1 / ±12, Interpolate Volume, Edit Mode |
 | **Song** | Play Song, Play From Start, Go to Start, Loop Pattern, Stop, Follow Playback, Add Track, Rename Song… |
 | **View** | Show Mixer, Collapse / Expand All Plug-in Lists |
-| **Plug-ins** | Plug-in Manager (scan VST3 / AU / CLAP)… |
+| **Plug-ins** | Plug-in Manager (scan VST3 / AU / CLAP)…, Scan for New Plug-ins (all formats) |
 | **Options** | Audio & MIDI Settings…, Default SoundFont… |
 | **Help** | Keyboard Shortcuts, About Artilody Tracker |
 

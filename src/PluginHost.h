@@ -19,7 +19,8 @@ public:
     juce::AudioPluginFormatManager formatManager;
     juce::KnownPluginList knownPlugins;
 
-    void showPluginManager();
+    /** Opens the Plug-in Manager; with startScanAll it immediately scans all formats for new plug-ins. */
+    void showPluginManager (bool startScanAll = false);
 
     std::unique_ptr<juce::AudioPluginInstance> createPlugin (const juce::PluginDescription&, double sampleRate, int blockSize, juce::String& error);
 

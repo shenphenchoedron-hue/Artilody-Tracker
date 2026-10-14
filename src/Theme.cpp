@@ -580,4 +580,43 @@ void IconButton::paintButton (juce::Graphics& g, bool hi, bool down)
     Theme::drawIcon (g, icon, r.withSizeKeepingCentre (s, s), (on ? onIcon : iconColour).withMultipliedAlpha (isEnabled() ? 1.0f : 0.4f));
 }
 
+//==============================================================================
+void ArtilodyLookAndFeel::drawTableHeaderBackground (juce::Graphics& g, juce::TableHeaderComponent& header)
+{
+    g.fillAll (Theme::panelAlt);
+    g.setColour (Theme::border);
+    g.fillRect (0, header.getHeight() - 1, header.getWidth(), 1);
+}
+
+void ArtilodyLookAndFeel::drawTableHeaderColumn (juce::Graphics& g, juce::TableHeaderComponent&, const juce::String& name, int,
+                                                 int w, int h, bool over, bool down, int flags)
+{
+    if (over || down)
+    {
+        g.setColour (Theme::selection.withAlpha (down ? 0.9f : 0.6f));
+        g.fillRect (0, 0, w, h - 1);
+    }
+
+    g.setColour (Theme::border.withAlpha (0.7f));
+    g.fillRect (w - 1, 8, 1, h - 16);
+
+    auto area = juce::Rectangle<int> (0, 0, w, h).reduced (10, 0);
+    const bool sorted = (flags & (juce::TableHeaderComponent::sortedForwards | juce::TableHeaderComponent::sortedBackwards)) != 0;
+    if (sorted)
+    {
+        auto arrow = area.removeFromRight (12).toFloat().withSizeKeepingCentre (8.0f, 5.0f);
+        juce::Path p;
+        if ((flags & juce::TableHeaderComponent::sortedForwards) != 0)
+            p.addTriangle (arrow.getX(), arrow.getBottom(), arrow.getRight(), arrow.getBottom(), arrow.getCentreX(), arrow.getY());
+        else
+            p.addTriangle (arrow.getX(), arrow.getY(), arrow.getRight(), arrow.getY(), arrow.getCentreX(), arrow.getBottom());
+        g.setColour (Theme::accentBlue);
+        g.fillPath (p);
+    }
+
+    g.setColour (sorted ? Theme::text : Theme::textDim);
+    g.setFont (Theme::uiFont (11.5f, 700));
+    g.drawFittedText (name.toUpperCase(), area, juce::Justification::centredLeft, 1, 0.9f);
+}
+
 } // namespace artilody

@@ -2,6 +2,13 @@
 
 Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channel strip lige under sig.
 
+### Nyt i 1.0.5
+- **Scan for new plug-ins**: én knap i Plug-in Manager (og menupunktet *Plug-ins → Scan for New Plug-ins*)
+  scanner VST3, AU og CLAP i ét hug. Kun nye eller opdaterede plug-ins indlæses.
+- Nyt design af Plug-in Manager: luft i siderne, oversigt over antal plug-ins, statuslinje, farvede
+  format-mærker (VST3 / AU / CLAP), tydelig markering af plug-ins der fejlede under scanning.
+- Manualerne er opdateret.
+
 ### Nyt i 1.0.4
 - **macOS:** Rettet nedbrud under plug-in-scanning med plug-ins, der skal indlæses på hovedtråden (fx Native
   Instruments Komplete Kontrol). Plug-in Manager scanner nu på hovedtråden.

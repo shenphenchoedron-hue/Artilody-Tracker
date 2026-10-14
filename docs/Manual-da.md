@@ -392,6 +392,16 @@ Klik på instrumentknappen i en channel strip for at åbne instrumentmenuen.
 
 Åbn **Plug-in Manager** med **Ctrl+P** eller *Plug-ins → Plug-in Manager…*, og scan efter plug-ins:
 
+- **Scan for new plug-ins** øverst i vinduet scanner VST3, AU og CLAP i ét hug. Det samme gør
+  *Plug-ins → Scan for New Plug-ins (all formats)*.
+  - Kun nye eller opdaterede plug-ins indlæses, så en ny scanning går hurtigt.
+  - Mens der scannes, reagerer vinduet ikke på klik.
+- Listen viser navn, format (VST3/AU/CLAP), type, producent og version. Plug-ins, der gik ned under
+  scanning, er markeret med **FAILED** og springes over næste gang. Højreklik på et plug-in for at fjerne det
+  eller vise dets mappe.
+- Under **Options…** kan du scanne ét format ad gangen og ændre, hvilke mapper der scannes. Mapperne bruges
+  også af *Scan for new plug-ins*.
+
 - **VST3** på alle platforme, **Audio Unit** på macOS og **CLAP** på alle platforme.
 - CLAP søges i standardmapperne og i mapper fra miljøvariablen `CLAP_PATH`:
   - macOS: `/Library/Audio/Plug-Ins/CLAP`, `~/Library/Audio/Plug-Ins/CLAP`
@@ -486,7 +496,7 @@ listen over scannede plug-ins.
 | **Edit** | Undo, Redo, Cut, Copy, Paste, Delete, Select Track Column, Transpose ±1 / ±12, Interpolate Volume, Edit Mode |
 | **Song** | Play Song, Play From Start, Go to Start, Loop Pattern, Stop, Follow Playback, Add Track, Rename Song… |
 | **View** | Show Mixer, Collapse / Expand All Plug-in Lists |
-| **Plug-ins** | Plug-in Manager (scan VST3 / AU / CLAP)… |
+| **Plug-ins** | Plug-in Manager (scan VST3 / AU / CLAP)…, Scan for New Plug-ins (all formats) |
 | **Options** | Audio & MIDI Settings…, Default SoundFont… |
 | **Help** | Keyboard Shortcuts, About Artilody Tracker |
 
