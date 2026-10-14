@@ -1,6 +1,6 @@
 # Artilody Tracker – User Manual
 
-*Version 1.0.6 · [Dansk version](Manual-da.md)*
+*Version 1.0.7 · [Dansk version](Manual-da.md)*
 
 Artilody Tracker is a pattern-based music tracker. Music is written as notes in vertical columns that are
 played line by line from top to bottom. Unlike most trackers, every track has its own **channel strip**
@@ -523,6 +523,22 @@ does not click.
   - The audio is 24-bit at the audio device's sample rate.
   - The sequence plays once, plus a 2.5-second tail.
   - The export can be cancelled while it runs.
+- **MIDI**: *File → Export Song as MIDI File…* saves the song as a Standard MIDI File (`.mid`, format 1) for
+  other music programs.
+  - There is one MIDI track per instrument (track), with the track's name and a program change from the
+    SoundFont preset. Drum kits play on channel 10.
+  - The song plays as it does in the program: sequence order, `Bxx` jumps, tempo (`Txx`), `Lxx`, delay
+    (`Dxx`), cut (`Cxx`), retrigger (`Rxy`), note off and the Ins column. Pitch bend (`Pxx`) and modulation
+    (`Mxx`) are included as MIDI messages. Vol becomes velocity.
+  - Instruments from audio files and plug-ins get program 1 (piano), which you can change in the other
+    program.
+- **MusicXML**: *File → Export Song as MusicXML…* saves the song as sheet music (`.musicxml`, MusicXML 4.0)
+  that opens in, for example, MuseScore, Dorico, Finale or Sibelius.
+  - One part per instrument with a treble or bass clef depending on pitch; drums get a percussion clef.
+  - 4/4 time. Notes are rounded to the nearest 1/32 note, and long notes are tied across bar lines.
+  - Notes with the same start and length are written as chords; overlapping notes are spread over up to
+    four voices.
+  - Tempo and tempo changes are written as metronome marks. A retrigger is written as one note.
 - **Demo songs**: *File → Demo Songs* has *Sunrise Circuits* (pop/electro) and *Blue Corner Swing* (jazz).
 - **New project** (**Ctrl+N**) creates four tracks:
   - Drums (Pop Drum Kit)
@@ -547,7 +563,7 @@ of scanned plug-ins.
 
 | Menu | Contents |
 |---|---|
-| **File** | New Project, Open Project…, Open Recent Project, Save Project, Save Project As…, Open Audio File as Instrument…, Export Song as Audio…, Demo Songs, Quit |
+| **File** | New Project, Open Project…, Open Recent Project, Save Project, Save Project As…, Open Audio File as Instrument…, Export Song as Audio…, Export Song as MIDI File…, Export Song as MusicXML…, Demo Songs, Quit |
 | **Edit** | Undo, Redo, Cut, Copy, Paste, Delete, Select Track Column, Transpose ±1 / ±12, Interpolate Volume, Edit Mode |
 | **Song** | Play Song, Play From Start, Go to Start, Loop Pattern, Stop, Follow Playback, Add Track, Rename Song… |
 | **View** | Show Mixer, Collapse / Expand All Plug-in Lists |

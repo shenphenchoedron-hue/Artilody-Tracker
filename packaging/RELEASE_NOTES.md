@@ -2,6 +2,13 @@
 
 Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channel strip lige under sig.
 
+### Nyt i 1.0.7
+- **Eksport til MIDI** (*File → Export Song as MIDI File…*): standard MIDI-fil med ét spor pr. instrument,
+  General MIDI-programmer, trommer på kanal 10, tempo, pitch bend og modulation.
+- **Eksport til MusicXML** (*File → Export Song as MusicXML…*): noder til MuseScore, Dorico, Finale, Sibelius
+  m.fl. med én stemme pr. instrument, akkorder, bindebuer over taktstreger og tempoangivelser.
+- Manualerne er opdateret.
+
 ### Nyt i 1.0.6
 - **Parametrisk EQ:** op til 8 frit placerede bånd (IIR-biquad: Bell, Low/High Shelf, Low/High Cut, Notch).
   Klik på linjen for at sætte et punkt, træk det op/ned og til siden, Shift = fin justering, musehjul = Q.

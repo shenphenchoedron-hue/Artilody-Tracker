@@ -1,6 +1,6 @@
 # Artilody Tracker – Brugermanual
 
-*Version 1.0.6 · [English version](Manual-en.md)*
+*Version 1.0.7 · [English version](Manual-en.md)*
 
 Artilody Tracker er en pattern-baseret music tracker. Musikken skrives som noder i lodrette kolonner, der
 afspilles linje for linje oppefra og ned. Til forskel fra de fleste trackere har hvert track sin egen
@@ -524,6 +524,21 @@ ikke opstår klik.
   - Lyden er 24-bit i lydkortets samplerate.
   - Sekvensen spilles én gang, plus 2,5 sekunders efterklang.
   - Eksporten kan annulleres undervejs.
+- **MIDI**: *File → Export Song as MIDI File…* gemmer sangen som en standard MIDI-fil (`.mid`, format 1) til
+  andre musikprogrammer.
+  - Der laves ét MIDI-spor pr. instrument (track), med trackets navn og et program-skift efter
+    SoundFont-presettet. Trommesæt spiller på kanal 10.
+  - Sangen spilles som i programmet: sekvensens rækkefølge, `Bxx`-hop, tempo (`Txx`), `Lxx`, forsinkelse
+    (`Dxx`), cut (`Cxx`), retrigger (`Rxy`), note off og Ins-kolonnen. Pitch bend (`Pxx`) og modulation
+    (`Mxx`) kommer med som MIDI-beskeder. Vol bliver til anslagsstyrke.
+  - Instrumenter fra lydfiler og plug-ins får program 1 (klaver), som kan ændres i det andet program.
+- **MusicXML**: *File → Export Song as MusicXML…* gemmer sangen som noder (`.musicxml`, MusicXML 4.0), der kan
+  åbnes i fx MuseScore, Dorico, Finale eller Sibelius.
+  - Én stemme (part) pr. instrument med G- eller F-nøgle efter tonehøjden; trommer får slagtøjsnøgle.
+  - 4/4-takt. Tonerne afrundes til nærmeste 1/32-node, og lange toner bindes over taktstreger.
+  - Toner med samme start og længde skrives som akkorder; overlappende toner fordeles på op til fire
+    stemmer (voices).
+  - Tempo og tempoændringer skrives som metronomangivelser. Retrigger skrives som én tone.
 - **Demosange**: *File → Demo Songs* indeholder *Sunrise Circuits* (pop/electro) og *Blue Corner Swing*
   (jazz).
 - **Nyt projekt** (**Ctrl+N**) opretter fire tracks:
@@ -549,7 +564,7 @@ listen over scannede plug-ins.
 
 | Menu | Indhold |
 |---|---|
-| **File** | New Project, Open Project…, Open Recent Project, Save Project, Save Project As…, Open Audio File as Instrument…, Export Song as Audio…, Demo Songs, Quit |
+| **File** | New Project, Open Project…, Open Recent Project, Save Project, Save Project As…, Open Audio File as Instrument…, Export Song as Audio…, Export Song as MIDI File…, Export Song as MusicXML…, Demo Songs, Quit |
 | **Edit** | Undo, Redo, Cut, Copy, Paste, Delete, Select Track Column, Transpose ±1 / ±12, Interpolate Volume, Edit Mode |
 | **Song** | Play Song, Play From Start, Go to Start, Loop Pattern, Stop, Follow Playback, Add Track, Rename Song… |
 | **View** | Show Mixer, Collapse / Expand All Plug-in Lists |

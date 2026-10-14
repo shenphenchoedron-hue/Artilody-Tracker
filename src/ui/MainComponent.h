@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../ScoreExport.h"
+
 #include "AppContext.h"
 #include "TopBar.h"
 #include "TrackArea.h"
@@ -77,6 +79,8 @@ private:
     juce::TextButton addTrackButton { "+  Add Track" }, mixerButton { "Hide Mixer" }, fxListsButton { "Collapse FX lists" };
     juce::TextButton colsMinus { "-" }, colsPlus { "+" };
     juce::TextButton editButton { "Edit: Off" }, loopToggle { "Loop: Off" };
+    void exportScore (bool musicXml);
+    std::vector<ScoreExport::InstrumentInfo> instrumentInfos();
     void updateLoopToggle();
     void setLoopEnabled (bool);
     void startLoop (int fromRow = -1);

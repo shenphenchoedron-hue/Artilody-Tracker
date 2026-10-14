@@ -561,7 +561,7 @@ namespace MenuIds
 {
     enum
     {
-        mi_newProject = 1, mi_openProject, mi_saveProject, mi_saveProjectAs, mi_importAudio, mi_exportAudio, mi_quit,
+        mi_newProject = 1, mi_openProject, mi_saveProject, mi_saveProjectAs, mi_importAudio, mi_exportAudio, mi_exportMidi, mi_exportMusicXml, mi_quit,
         mi_demoSong, mi_jazzSong, mi_clearRecent,
         mi_undo = 100, mi_redo, mi_cut, mi_copy, mi_paste, mi_del, mi_selectTrack, mi_transposeUp, mi_transposeDown, mi_octaveUp, mi_octaveDown, mi_interpolate, mi_editMode,
         mi_playSong = 200, mi_playFromStart, mi_rewind, mi_playPattern, mi_stop, mi_addTrack, mi_renameSong, mi_followPlayback,
@@ -619,6 +619,8 @@ juce::PopupMenu MainComponent::getMenuForIndex (int index, const juce::String&)
             m.addSeparator();
             item (mi_importAudio, "Open Audio File as Instrument...", cmd + "I", engine.song.numTracks() > 0);
             item (mi_exportAudio, "Export Song as Audio (WAV / AIFF / FLAC)...", cmd + "E");
+            item (mi_exportMidi, "Export Song as MIDI File...");
+            item (mi_exportMusicXml, "Export Song as MusicXML (sheet music)...");
             m.addSeparator();
             juce::PopupMenu demos;
             demos.addItem (mi_demoSong, "Sunrise Circuits (pop / electro)");
@@ -704,6 +706,8 @@ void MainComponent::menuItemSelected (int id, int)
         case mi_saveProjectAs:  saveProject (true); break;
         case mi_importAudio:    importAudioFile(); break;
         case mi_exportAudio:    exportAudio(); break;
+        case mi_exportMidi:     exportScore (false); break;
+        case mi_exportMusicXml: exportScore (true); break;
         case mi_quit:           juce::JUCEApplication::getInstance()->systemRequestedQuit(); break;
         case mi_demoSong:       loadBuiltInSong (false); break;
         case mi_jazzSong:       loadBuiltInSong (true); break;
@@ -1005,6 +1009,52 @@ void MainComponent::exportAudio()
 
         auto* job = new ExportJob (engine, f);
         job->launchThread();
+    });
+}
+
+std::vector<ScoreExport::InstrumentInfo> MainComponent::instrumentInfos()
+{
+    std::vector<ScoreExport::InstrumentInfo> infos;
+    for (int t = 0; t < engine.song.numTracks(); ++t)
+    {
+        ScoreExport::InstrumentInfo i;
+        i.name = engine.song.tracks[(size_t) t].name;
+        if (auto* sf = engine.getStrip (t).getSoundFont())
+        {
+            i.drums = sf->isDrums() || sf->getBank() == 128;
+            i.program = juce::jlimit (0, 127, sf->getProgram());
+        }
+        infos.push_back (i);
+    }
+    return infos;
+}
+
+void MainComponent::exportScore (bool musicXml)
+{
+    const juce::String ext = musicXml ? ".musicxml" : ".mid";
+    auto initial = lastDirectory.getChildFile (juce::File::createLegalFileName (engine.song.title.isNotEmpty() ? engine.song.title : juce::String ("Song")) + ext);
+    chooser = std::make_unique<juce::FileChooser> (musicXml ? "Export song as MusicXML" : "Export song as MIDI file", initial,
+                                                   musicXml ? "*.musicxml;*.xml" : "*.mid;*.midi");
+    chooser->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles | juce::FileBrowserComponent::warnAboutOverwriting,
+                          [this, musicXml, ext] (const juce::FileChooser& fc)
+    {
+        auto f = fc.getResult();
+        if (f == juce::File()) return;
+        if (! f.hasFileExtension (musicXml ? "musicxml;xml" : "mid;midi"))
+            f = f.withFileExtension (ext);
+        lastDirectory = f.getParentDirectory();
+
+        juce::String error;
+        bool ok;
+        {
+            const juce::ScopedLock sl (engine.song.lock);
+            ok = musicXml ? ScoreExport::writeMusicXml (engine.song, instrumentInfos(), f, error)
+                          : ScoreExport::writeMidi (engine.song, instrumentInfos(), f, error);
+        }
+        if (ok)
+            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "Export finished", f.getFullPathName());
+        else
+            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Export", error);
     });
 }
 
