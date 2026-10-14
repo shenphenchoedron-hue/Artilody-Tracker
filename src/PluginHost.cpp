@@ -117,8 +117,14 @@ void PluginHost::showPluginManager()
             auto deadMans = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                                 .getChildFile ("Artilody Tracker").getChildFile ("scan-crash.txt");
             deadMans.getParentDirectory().createDirectory();
+            // Scan on the message thread (allowAsync = false, 0 threads). Many plug-ins - e.g.
+            // Native Instruments' Qt based ones like Komplete Kontrol - initialise their UI
+            // toolkit when the binary is loaded and assert that this happens on the main
+            // thread; scanning them from a background thread crashed the app (SIGILL in
+            // dispatch_assert_queue) on macOS.
             auto* list = new juce::PluginListComponent (h.formatManager, h.knownPlugins, deadMans,
-                                                         h.properties.getUserSettings(), true);
+                                                         h.properties.getUserSettings(), false);
+            list->setNumberOfThreadsForScanning (0);
             list->setSize (820, 520);
             setContentOwned (list, true);
             setResizable (true, false);

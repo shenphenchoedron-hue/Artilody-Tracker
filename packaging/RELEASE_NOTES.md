@@ -2,6 +2,11 @@
 
 Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channel strip lige under sig.
 
+### Nyt i 1.0.4
+- **macOS:** Rettet nedbrud under plug-in-scanning med plug-ins, der skal indlæses på hovedtråden (fx Native
+  Instruments Komplete Kontrol). Plug-in Manager scanner nu på hovedtråden.
+- Brugermanualerne som PDF følger nu med i alle pakker.
+
 ### Nyt i 1.0.3
 - Projekter gemmes nu som **`.artixml`**, så det er tydeligt, at filen er almindelig XML. Ældre `.artilody`-filer
   kan stadig åbnes og gemmes som `.artixml`.
