@@ -1,7 +1,4 @@
 
-
-https://github.com/user-attachments/assets/f6d7f7ae-9887-4f4d-945c-cea8d2bb7f3d
-
 <p align="center"><img src="resources/logo_full.png" alt="Artilody" height="90"></p>
 
 # Artilody Tracker
