@@ -151,10 +151,9 @@ bool save (AudioEngine& e, const juce::File& file, juce::String& error)
 {
     juce::ValueTree root ("ARTILODY_PROJECT");
     root.setProperty ("version", ARTILODY_VERSION, nullptr);
-    {
-        const juce::ScopedLock sl (e.song.lock);
-        root.appendChild (e.song.toValueTree(), nullptr);
-    }
+    // Message-thread read (the only writer of song data), so no song.lock: building the
+    // value tree allocates a lot and holding the lock would stall the audio callback.
+    root.appendChild (e.song.toValueTree(), nullptr);
 
     juce::ValueTree strips ("STRIPS");
     for (int t = 0; t < e.getNumStrips(); ++t)

@@ -1,10 +1,36 @@
 #include "PatternGrid.h"
+#include <array>
 
 namespace artilody
 {
 
 static constexpr int kPadLeft = 9;
 static constexpr int kNumFields = 8;
+
+// Pre-built strings so painting the grid does not allocate thousands of Strings per frame.
+static const juce::String& hexString (int v)
+{
+    static const auto table = []
+    {
+        std::array<juce::String, 256> t;
+        for (int i = 0; i < 256; ++i)
+            t[(size_t) i] = juce::String::toHexString (i).paddedLeft ('0', 2).toUpperCase();
+        return t;
+    }();
+    return table[(size_t) (v & 0xFF)];
+}
+
+static const juce::String& noteString (int note)
+{
+    static const auto table = []
+    {
+        std::array<juce::String, 128> t;
+        for (int i = 0; i < 128; ++i)
+            t[(size_t) i] = noteToString (i);
+        return t;
+    }();
+    return table[(size_t) juce::jlimit (0, 127, note)];
+}
 
 PatternGrid::PatternGrid (AppContext& c) : ctx (c)
 {
@@ -158,8 +184,11 @@ void PatternGrid::paint (juce::Graphics& g)
     int sr0 = 0, sr1 = -1;
     if (st.hasSelection) getSelectionRows (sr0, sr1);
 
-    const juce::ScopedLock sl (song.lock);
-
+    // NB: no song.lock here. Pattern data is only ever modified on the message thread
+    // (which is the thread painting), and the audio thread only reads it. Holding the
+    // lock while drawing hundreds of text runs blocked the real-time audio callback for
+    // the whole paint - on macOS (CoreGraphics text rendering, Retina) that easily takes
+    // longer than one audio buffer and caused crackling / stuttering during playback.
     for (int i = 0; i < visible; ++i)
     {
         const int r = first + i;
@@ -211,25 +240,25 @@ void PatternGrid::paint (juce::Graphics& g)
                 if (cell.note == kNoteOff)
                     drawField (0, "OFF", juce::Colour (0xff8fa0bb), true);
                 else if (cell.note >= 0)
-                    drawField (0, noteToString (cell.note), colour.brighter (0.35f), true);
+                    drawField (0, noteString (cell.note), colour.brighter (0.35f), true);
                 else
                     drawField (0, "---", Theme::gridDim, false);
 
                 // instrument
                 if (cell.ins != 0xFF)
-                    drawField (5, juce::String::toHexString ((int) cell.ins).paddedLeft ('0', 2).toUpperCase(), colour.brighter (0.1f).withAlpha (0.95f), true);
+                    drawField (5, hexString ((int) cell.ins), colour.brighter (0.1f).withAlpha (0.95f), true);
                 else
                     drawField (5, "--", Theme::gridDim, false);
 
                 // volume
                 if (cell.vol != 0xFF)
-                    drawField (9, juce::String::toHexString ((int) cell.vol).paddedLeft ('0', 2).toUpperCase(), Theme::gridText, false);
+                    drawField (9, hexString ((int) cell.vol), Theme::gridText, false);
                 else
                     drawField (9, "--", Theme::gridDim, false);
 
                 // effect
                 if (cell.fxCmd != 0)
-                    drawField (13, juce::String::charToString ((juce::juce_wchar) cell.fxCmd) + juce::String::toHexString ((int) cell.fxVal).paddedLeft ('0', 2).toUpperCase(),
+                    drawField (13, juce::String::charToString ((juce::juce_wchar) cell.fxCmd) + hexString ((int) cell.fxVal),
                                juce::Colour (0xffffc46b), false);
                 else
                     drawField (13, "---", Theme::gridDim, false);

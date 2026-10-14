@@ -2,6 +2,11 @@
 
 Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channel strip lige under sig.
 
+### Nyt i 1.0.2
+- **macOS:** Rettet skrattende/hakkende lyd under afspilning. Pattern-griddet holdt mixerens lås, mens det blev
+  tegnet, så lydtråden måtte vente på tegningen ved hver ny linje. Griddet, undo og gem holder ikke længere låsen,
+  og lydtråden allokerer ikke længere hukommelse ved forsinkede noder.
+
 ### Download
 
 | Platform | Fil |

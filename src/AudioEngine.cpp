@@ -289,7 +289,8 @@ void AudioEngine::previewNoteOff (int track, int note)
 void AudioEngine::previewAllOff()
 {
     const juce::SpinLock::ScopedLockType sl (previewLock);
-    previewQueue.push_back ({ -1, -1, 0.0f, false });
+    if (previewQueue.size() < previewQueue.capacity())
+        previewQueue.push_back ({ -1, -1, 0.0f, false });
 }
 
 void AudioEngine::handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMessage& m)
@@ -399,7 +400,7 @@ void AudioEngine::triggerRow (int64_t rowTime, int64_t blockStart, int numSample
             {
                 if (when <= rowTime)
                     startColumnNote (t, col, c.note, inst, vel, offset);
-                else
+                else if (scheduled.size() < scheduled.capacity())
                     scheduled.push_back ({ when, EvType::NoteOn, (int16_t) t, (int8_t) col, c.note, (int16_t) inst, vel });
 
                 if (c.fxCmd == 'R' && (c.fxVal & 0x0F) > 0)
@@ -420,7 +421,7 @@ void AudioEngine::triggerRow (int64_t rowTime, int64_t blockStart, int numSample
             {
                 if (when <= rowTime)
                     stopColumnNote (t, col, offset);
-                else
+                else if (scheduled.size() < scheduled.capacity())
                     scheduled.push_back ({ when, EvType::NoteOff, (int16_t) t, (int8_t) col, -1, (int16_t) inst, 0.0f });
             }
 

@@ -100,9 +100,10 @@ struct AppContext
     /** Snapshot-based undo helpers. */
     void beginPatternEdit()
     {
+        // Read-only copy on the message thread (the only writer), so no song.lock needed.
+        // Copying (allocating) while holding the lock would stall the audio thread.
         if (auto* p = currentPattern())
         {
-            const juce::ScopedLock sl (engine.song.lock);
             editBefore = *p;
             editPatternIndex = state.pattern;
         }
@@ -112,11 +113,7 @@ struct AppContext
     {
         auto* p = currentPattern();
         if (p == nullptr || editPatternIndex != state.pattern) return;
-        Pattern after;
-        {
-            const juce::ScopedLock sl (engine.song.lock);
-            after = *p;
-        }
+        Pattern after = *p; // message-thread read, see beginPatternEdit()
         undo.beginNewTransaction (name);
         undo.perform (new PatternSnapshotAction (engine, editPatternIndex, std::move (editBefore), std::move (after)));
         state.dirty = true;
