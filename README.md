@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/f6d7f7ae-9887-4f4d-945c-cea8d2bb7f3d
+
 <p align="center"><img src="resources/logo_full.png" alt="Artilody" height="90"></p>
 
 # Artilody Tracker
@@ -7,9 +11,7 @@ Til forskel fra de fleste trackere har Artilody Tracker en rigtig mixer: når du
 oprettes der automatisk en channel strip **lige under tracket**, som styrer det.
 
 
-
-
-
+https://github.com/user-attachments/assets/5b9cc55c-6dc7-4417-8176-0847bdc3ca2f
 
 
 ## Funktioner
