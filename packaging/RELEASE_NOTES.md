@@ -27,4 +27,7 @@ Pattern-baseret music tracker med fuld mixer – hvert track har sin egen channe
 - Ubegrænset antal VST3 / AU / CLAP effekter pr. strip – kan flyttes op/ned, bypasses og listen kan kollapses
 - Indbygget EQ, kompressor og reverb pr. strip (tænd/sluk + indstillinger)
 - Panorering, lydstyrke, mute og solo
-- MIDI-keyboard input, projekter (.artilody) og eksport til WAV
+- Menulinje med File / Edit / Song / View / Plug-ins / Options / Help
+- Åbn lydfiler (WAV/AIFF/FLAC/OGG/MP3) som sampler-instrument, eksport til WAV/AIFF/FLAC
+- MIDI-keyboard input, projekter (.artilody) og seneste projekter
+- Demo-sange: *Sunrise Circuits* og jazznummeret *Blue Corner Swing*

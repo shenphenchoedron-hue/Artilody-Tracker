@@ -98,19 +98,14 @@ TopBar::TopBar (AppContext& c) : ctx (c)
     followButton.setTooltip ("Follow playback");
     undoButton.setTooltip ("Undo (Ctrl+Z)");
     redoButton.setTooltip ("Redo (Ctrl+Y)");
-    pluginButton.setTooltip ("Plug-in Manager (scan VST3 / AU / CLAP)");
-    exportButton.setTooltip ("Export song to WAV");
-    saveButton.setTooltip ("Save project (Ctrl+S)");
-    settingsButton.setTooltip ("Audio & MIDI settings");
-    menuButton.setTooltip ("File menu");
 
     for (auto* b : { &rewindButton, &playButton, &loopButton, &stopButton, &recordButton, &followButton,
-                     &undoButton, &redoButton, &pluginButton, &exportButton, &menuButton, &saveButton, &settingsButton })
+                     &undoButton, &redoButton })
     {
         b->radius = 10.0f;
         addAndMakeVisible (b);
     }
-    for (auto* b : { &undoButton, &redoButton, &pluginButton, &exportButton, &menuButton, &saveButton, &settingsButton })
+    for (auto* b : { &undoButton, &redoButton })
         b->fill = Theme::panel;
 
     rewindButton.onClick = [this] { if (onRewind) onRewind(); };
@@ -121,11 +116,6 @@ TopBar::TopBar (AppContext& c) : ctx (c)
     followButton.onClick = [this] { ctx.state.followPlayback = ! ctx.state.followPlayback; ctx.state.changed(); };
     undoButton.onClick = [this] { if (onUndo) onUndo(); };
     redoButton.onClick = [this] { if (onRedo) onRedo(); };
-    pluginButton.onClick = [this] { if (onPluginManager) onPluginManager(); };
-    exportButton.onClick = [this] { if (onExport) onExport(); };
-    saveButton.onClick = [this] { if (onSave) onSave(); };
-    settingsButton.onClick = [this] { if (onAudioSettings) onAudioSettings(); };
-    menuButton.onClick = [this] { if (onMainMenu) onMainMenu(); };
 
     bpmBox.getValue = [this] { return ctx.engine.isPlaying() ? ctx.engine.runtimeBpm.load() : ctx.engine.song.bpm; };
     bpmBox.setValue = [this] (double v) { ctx.engine.setBpm (v); ctx.state.dirty = true; };
@@ -198,13 +188,8 @@ void TopBar::resized()
     place (followButton, 44, 18);
 
     auto right = r;
-    settingsButton.setBounds (right.removeFromRight (44)); right.removeFromRight (8);
-    projectArea = right.removeFromRight (juce::jmin (190, juce::jmax (0, right.getWidth() - 360)));
-    right.removeFromRight (8);
-    saveButton.setBounds (right.removeFromRight (44)); right.removeFromRight (6);
-    menuButton.setBounds (right.removeFromRight (44)); right.removeFromRight (18);
-    exportButton.setBounds (right.removeFromRight (44)); right.removeFromRight (6);
-    pluginButton.setBounds (right.removeFromRight (44)); right.removeFromRight (6);
+    projectArea = right.removeFromRight (juce::jmin (230, juce::jmax (0, right.getWidth() - 200)));
+    right.removeFromRight (16);
     redoButton.setBounds (right.removeFromRight (44)); right.removeFromRight (6);
     undoButton.setBounds (right.removeFromRight (44)); right.removeFromRight (16);
     meterArea = right;
@@ -250,7 +235,6 @@ void TopBar::paint (juce::Graphics& g)
         g.setColour (Theme::border);
         g.drawRoundedRectangle (pr, 9.0f, 1.0f);
         auto inner = projectArea.reduced (12, 5);
-        Theme::drawIcon (g, Theme::Icon::Chevron, inner.removeFromRight (14).toFloat().withTrimmedTop (14).withSizeKeepingCentre (13, 13), Theme::text);
         g.setColour (Theme::textDim);
         g.setFont (Theme::uiFont (11.0f, 600));
         g.drawText (ctx.state.dirty ? "Project  (modified)" : "Project", inner.removeFromTop (14), juce::Justification::centredLeft);
@@ -258,13 +242,6 @@ void TopBar::paint (juce::Graphics& g)
         g.setFont (Theme::uiFont (15.5f, 700));
         g.drawFittedText (ctx.engine.song.title, inner, juce::Justification::centredLeft, 1, 0.8f);
     }
-}
-
-void TopBar::mouseUp (const juce::MouseEvent& e)
-{
-    if (! e.mouseWasClicked()) return;
-    if (projectArea.contains (e.getPosition()) && onMainMenu)
-        onMainMenu();
 }
 
 } // namespace artilody

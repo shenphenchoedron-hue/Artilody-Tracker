@@ -40,10 +40,9 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
-    void mouseUp (const juce::MouseEvent&) override;
 
     std::function<void()> onPlaySong, onPlayPattern, onStop, onRewind;
-    std::function<void()> onUndo, onRedo, onPluginManager, onAudioSettings, onExport, onSave, onOpen, onNew, onMainMenu;
+    std::function<void()> onUndo, onRedo;
 
     void updateState();
 
@@ -57,10 +56,7 @@ private:
                recordButton { "Edit mode", Theme::Icon::Record };
     NumberBox bpmBox { "BPM", 20, 999, 1 }, lpbBox { "LPB", 1, 32, 1 }, octBox { "Oct", 0, 9, 1 }, stepBox { "Step", 0, 16, 1 };
     IconButton followButton { "Follow", Theme::Icon::Follow };
-    IconButton undoButton { "Undo", Theme::Icon::Undo }, redoButton { "Redo", Theme::Icon::Redo },
-               pluginButton { "Plug-ins", Theme::Icon::Plug }, exportButton { "Export", Theme::Icon::Export },
-               menuButton { "Menu", Theme::Icon::Dots }, saveButton { "Save", Theme::Icon::Save },
-               settingsButton { "Settings", Theme::Icon::Gear };
+    IconButton undoButton { "Undo", Theme::Icon::Undo }, redoButton { "Redo", Theme::Icon::Redo };
     LevelMeter masterMeter;
     juce::Rectangle<int> logoArea, projectArea, meterArea;
     float cpu = 0.0f;

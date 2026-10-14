@@ -900,7 +900,6 @@ bool PatternGrid::keyPressed (const juce::KeyPress& key)
         if (ch == 'x') { copySelection (true); return true; }
         if (ch == 'v') { paste(); return true; }
         if (ch == 'a') { selectAllInTrack(); return true; }
-        if (ch == 'i') { interpolateVolumes(); return true; }
         if (code == juce::KeyPress::upKey && shift)   { transpose (12); return true; }
         if (code == juce::KeyPress::downKey && shift) { transpose (-12); return true; }
         if (code == juce::KeyPress::upKey)   { transpose (1); return true; }

@@ -5,7 +5,7 @@
     <TRACKS>
       <TRACK name="Drums" colour="ffff5a4e" columns="3" uid="1"/>
       <TRACK name="Bass" colour="ff1fbfb0" columns="1" uid="2"/>
-      <TRACK name="Piano" colour="ffffa62b" columns="4" uid="3"/>
+      <TRACK name="Piano chords" colour="ff9b6bf2" columns="4" uid="3"/>
       <TRACK name="Tenor Sax" colour="ff2f7bf0" columns="1" uid="4"/>
       <TRACK name="Vibes" colour="ff27c2ef" columns="1" uid="5"/>
     </TRACKS>
@@ -55,7 +55,7 @@
             width="1.0" mix="0.119999997317791"/>
       </BUILTINS>
     </STRIP>
-    <STRIP volume="-1.0" pan="0.0" mute="0" solo="0" fxCollapsed="0">
+    <STRIP volume="-1.0" pan="0.0" mute="0" solo="0" fxCollapsed="1">
       <INSTRUMENT kind="soundfont" genre="Jazz" name="Acoustic Bass" bank="0" program="32"
                   drums="0"/>
       <FXCHAIN/>
@@ -84,7 +84,7 @@
       </BUILTINS>
     </STRIP>
     <STRIP volume="-5.0" pan="0.2000000029802322" mute="0" solo="0" fxCollapsed="0">
-      <INSTRUMENT kind="soundfont" genre="Jazz" name="Tenor Sax" bank="0" program="66"
+      <INSTRUMENT kind="soundfont" genre="Jazz" name="Jazz Guitar" bank="0" program="26"
                   drums="0"/>
       <FXCHAIN/>
       <BUILTINS>

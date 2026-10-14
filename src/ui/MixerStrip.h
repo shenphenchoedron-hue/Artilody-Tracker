@@ -59,6 +59,8 @@ public:
     void showInstrumentMenu();
     void showAddFxMenu();
     void showTrackMenu();
+    void chooseAudioSample();
+    bool loadAudioSample (const juce::File&);
 
 private:
     class InstrumentButton;
@@ -89,6 +91,7 @@ private:
     LevelMeter meter, compactMeter;
     juce::TextButton muteButton { "M" }, soloButton { "S" };
     juce::Label dbLabel;
+    juce::Rectangle<int> dbRow;
 
     juce::Array<juce::PluginDescription> menuPlugins;
     std::unique_ptr<juce::FileChooser> chooser;

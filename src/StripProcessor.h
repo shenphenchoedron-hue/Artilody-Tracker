@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "BuiltinFX.h"
 #include "SoundFontInstrument.h"
+#include "SampleInstrument.h"
 
 namespace artilody
 {
@@ -11,6 +12,7 @@ enum class InstrumentKind
 {
     None,
     SoundFont,
+    Sample,
     Plugin
 };
 
@@ -33,6 +35,7 @@ public:
     InstrumentKind getInstrumentKind() const noexcept { return instrumentKind; }
     juce::AudioProcessor* getInstrument() const noexcept { return instrument.get(); }
     SoundFontInstrument* getSoundFont() const noexcept;
+    SampleInstrument* getSampler() const noexcept;
     juce::AudioPluginInstance* getInstrumentPlugin() const noexcept;
     juce::String getInstrumentName() const;
     juce::String getInstrumentTypeName() const;

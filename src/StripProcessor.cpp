@@ -20,6 +20,11 @@ SoundFontInstrument* StripProcessor::getSoundFont() const noexcept
     return instrumentKind == InstrumentKind::SoundFont ? static_cast<SoundFontInstrument*> (instrument.get()) : nullptr;
 }
 
+SampleInstrument* StripProcessor::getSampler() const noexcept
+{
+    return instrumentKind == InstrumentKind::Sample ? static_cast<SampleInstrument*> (instrument.get()) : nullptr;
+}
+
 juce::AudioPluginInstance* StripProcessor::getInstrumentPlugin() const noexcept
 {
     return instrumentKind == InstrumentKind::Plugin ? static_cast<juce::AudioPluginInstance*> (instrument.get()) : nullptr;
@@ -35,6 +40,8 @@ juce::String StripProcessor::getInstrumentTypeName() const
 {
     if (auto* sf = getSoundFont())
         return sf->genre.isNotEmpty() ? sf->genre + " / SoundFont" : juce::String ("SoundFont");
+    if (getSampler() != nullptr)
+        return "Sampler (audio file)";
     if (auto* p = getInstrumentPlugin())
         return p->getPluginDescription().pluginFormatName.replace ("AudioUnit", "AU");
     return "Choose...";

@@ -719,9 +719,9 @@ void MixerStrip::resized()
         b.removeFromLeft (6);
         soloButton.setBounds (b);
     }
-    auto panArea = r.removeFromBottom (50);
-    panKnob.setBounds (panArea.withSizeKeepingCentre (46, 46));
-    r.removeFromBottom (18); // dB label row (painted)
+    auto panArea = r.removeFromBottom (54);
+    panKnob.setBounds (panArea.withTrimmedTop (12).withSizeKeepingCentre (42, 42));
+    dbRow = r.removeFromBottom (18); // dB label row (painted)
 
     auto right = r.removeFromRight (44);
     meter.setBounds (right.removeFromRight (12).reduced (0, 4));
@@ -777,16 +777,16 @@ void MixerStrip::paint (juce::Graphics& g)
     const juce::String dbText = db <= -59.9f ? juce::String ("-inf dB") : juce::String (db, 1) + " dB";
     g.setColour (Theme::text);
     g.setFont (Theme::uiFont (11.5f, 700));
-    auto dbArea = juce::Rectangle<int> (6, panKnob.getY() - 18, getWidth() - 12, 16);
+    auto dbArea = dbRow;
     g.drawText (dbText, dbArea, juce::Justification::centredRight);
 
     // pan labels
     g.setColour (Theme::textDim);
     g.setFont (Theme::uiFont (10.5f, 600));
     auto pk = panKnob.getBounds();
-    g.drawText ("L", pk.getX() - 14, pk.getBottom() - 14, 12, 12, juce::Justification::centred);
-    g.drawText ("R", pk.getRight() + 2, pk.getBottom() - 14, 12, 12, juce::Justification::centred);
-    g.drawText ("C", pk.getCentreX() - 6, pk.getBottom() - 6, 12, 12, juce::Justification::centred);
+    g.drawText ("L", pk.getX() - 13, pk.getBottom() - 13, 12, 12, juce::Justification::centred);
+    g.drawText ("R", pk.getRight() + 1, pk.getBottom() - 13, 12, 12, juce::Justification::centred);
+    g.drawText ("C", pk.getCentreX() - 6, pk.getY() - 12, 12, 12, juce::Justification::centred);
     if (std::abs (strip.pan.load()) > 0.005f)
     {
         const int pv = juce::roundToInt (strip.pan.load() * 100.0f);
@@ -955,6 +955,40 @@ void MixerStrip::loadSoundFontPreset (const juce::String& genre, int bank, int p
     refresh();
 }
 
+void MixerStrip::chooseAudioSample()
+{
+    if (strip.isMaster) return;
+    chooser = std::make_unique<juce::FileChooser> ("Open audio file as instrument",
+                                                   juce::File::getSpecialLocation (juce::File::userMusicDirectory),
+                                                   SampleInstrument::getWildcard());
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles, [this] (const juce::FileChooser& fc)
+    {
+        auto f = fc.getResult();
+        if (f.existsAsFile())
+            loadAudioSample (f);
+    });
+}
+
+bool MixerStrip::loadAudioSample (const juce::File& f)
+{
+    auto smp = std::make_unique<SampleInstrument>();
+    juce::String err;
+    if (! smp->loadFile (f, 60, err))
+    {
+        juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Open audio file", err);
+        return false;
+    }
+    auto old = strip.setInstrument (std::move (smp), InstrumentKind::Sample);
+    if (old != nullptr)
+    {
+        PluginHost::get().closeEditor (old.get());
+        old.reset();
+    }
+    ctx.state.dirty = true;
+    refresh();
+    return true;
+}
+
 void MixerStrip::loadPluginInstrument (const juce::PluginDescription& d)
 {
     juce::String err;
@@ -1027,6 +1061,7 @@ void MixerStrip::showInstrumentMenu()
         m.addSubMenu ("All presets: " + font->getFile().getFileNameWithoutExtension(), all);
     }
     m.addItem (9001, "Load SoundFont file (.sf2)...");
+    m.addItem (9005, "Load audio file as sampler (WAV / AIFF / FLAC / OGG / MP3)...");
 
     m.addSeparator();
     m.addSectionHeader ("Instrument plug-ins");
@@ -1078,6 +1113,10 @@ void MixerStrip::showInstrumentMenu()
                 const auto& p = presets.front();
                 loadSoundFontPreset ({}, p.bank, p.program, p.bank == 128, p.name, sf);
             });
+        }
+        else if (r == 9005)
+        {
+            chooseAudioSample();
         }
         else if (r == 9002)
         {

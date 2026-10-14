@@ -60,6 +60,12 @@ static juce::ValueTree stripToTree (StripProcessor& s)
         if (font != nullptr && (def == nullptr || font->getFile() != def->getFile()))
             inst.setProperty ("file", font->getFile().getFullPathName(), nullptr);
     }
+    else if (auto* smp = s.getSampler())
+    {
+        inst.setProperty ("kind", "sample", nullptr);
+        inst.setProperty ("file", smp->getFile().getFullPathName(), nullptr);
+        inst.setProperty ("root", smp->getRootNote(), nullptr);
+    }
     else if (auto* p = s.getInstrumentPlugin())
     {
         inst.setProperty ("kind", "plugin", nullptr);
@@ -112,6 +118,15 @@ static void stripFromTree (StripProcessor& s, const juce::ValueTree& v, AudioEng
         sf->setPreset ((int) inst.getProperty ("bank"), (int) inst.getProperty ("program"), (bool) inst.getProperty ("drums"), inst.getProperty ("name").toString());
         sf->setSoundFont (font);
         s.setInstrument (std::move (sf), InstrumentKind::SoundFont);
+    }
+    else if (kind == "sample")
+    {
+        auto smp = std::make_unique<SampleInstrument>();
+        juce::String err;
+        if (smp->loadFile (juce::File (inst.getProperty ("file").toString()), (int) inst.getProperty ("root", 60), err))
+            s.setInstrument (std::move (smp), InstrumentKind::Sample);
+        else
+            problems.add (err);
     }
     else if (kind == "plugin")
     {
@@ -194,7 +209,7 @@ bool load (AudioEngine& e, const juce::File& file, juce::String& error)
     e.songStructureChanged();
 
     if (! problems.isEmpty())
-        error = "Some plug-ins could not be loaded:\n" + problems.joinIntoString ("\n");
+        error = "Some plug-ins or files could not be loaded:\n" + problems.joinIntoString ("\n");
     return true;
 }
 

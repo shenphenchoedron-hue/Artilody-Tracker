@@ -68,6 +68,10 @@ public:
     juce::Font getLabelFont (juce::Label&) override;
     juce::Font getPopupMenuFont() override;
     void drawPopupMenuBackground (juce::Graphics&, int w, int h) override;
+    void drawMenuBarBackground (juce::Graphics&, int w, int h, bool isMouseOverBar, juce::MenuBarComponent&) override;
+    void drawMenuBarItem (juce::Graphics&, int w, int h, int itemIndex, const juce::String& itemText,
+                          bool isMouseOverItem, bool isMenuOpen, bool isMouseOverBar, juce::MenuBarComponent&) override;
+    juce::Font getMenuBarFont (juce::MenuBarComponent&, int itemIndex, const juce::String& itemText) override;
 
     void drawToggleButton (juce::Graphics&, juce::ToggleButton&, bool highlighted, bool down) override;
     void drawScrollbar (juce::Graphics&, juce::ScrollBar&, int x, int y, int w, int h, bool vertical,

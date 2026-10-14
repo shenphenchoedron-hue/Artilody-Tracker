@@ -176,6 +176,11 @@ public:
             content = new MainComponent (props);
             content->onTitleChanged = [this] (const juce::String& t) { setName (t); };
             setContentOwned (content, true);
+           #if JUCE_MAC
+            juce::MenuBarModel::setMacMainMenu (content);
+           #else
+            setMenuBar (content, 28);
+           #endif
             setResizable (true, true);
             setResizeLimits (1100, 720, 10000, 10000);
 
@@ -187,6 +192,15 @@ public:
             if (auto icon = Theme::logoMark(); icon.isValid())
                 setIcon (icon);
             setVisible (true);
+        }
+
+        ~MainWindow() override
+        {
+           #if JUCE_MAC
+            juce::MenuBarModel::setMacMainMenu (nullptr);
+           #else
+            setMenuBar (nullptr);
+           #endif
         }
 
         void openFile (const juce::File& f)

@@ -246,14 +246,26 @@ namespace Theme
             case Icon::Undo:
             case Icon::Redo:
             {
-                const bool undo = icon == Icon::Undo;
-                p.addCentredArc (b.getCentreX(), b.getCentreY() + s * 0.06f, s * 0.26f, s * 0.24f, 0.0f,
-                                 undo ? -1.9f : 1.9f, undo ? 1.4f : -1.4f, true);
-                stroke (p);
-                juce::Path a;
-                const float ax = undo ? b.getX() + s * 0.22f : b.getRight() - s * 0.22f;
-                a.addTriangle (ax - s * 0.1f, b.getY() + s * 0.3f, ax + s * 0.1f, b.getY() + s * 0.3f, ax, b.getY() + s * 0.48f);
-                g.fillPath (a);
+                // classic curved "back" arrow: arrowhead on the left, shaft curving down to the right
+                auto pt = [&] (float x, float y) { return juce::Point<float> (b.getX() + s * x, b.getY() + s * y); };
+                juce::Path shaft;
+                shaft.startNewSubPath (pt (0.34f, 0.40f));
+                shaft.lineTo (pt (0.58f, 0.40f));
+                shaft.addCentredArc (b.getX() + s * 0.58f, b.getY() + s * 0.56f, s * 0.16f, s * 0.16f, 0.0f,
+                                     0.0f, juce::MathConstants<float>::pi, false);
+                shaft.lineTo (pt (0.36f, 0.72f));
+
+                juce::Path head;
+                head.addTriangle (pt (0.16f, 0.40f), pt (0.36f, 0.25f), pt (0.36f, 0.55f));
+
+                juce::AffineTransform flip;
+                if (icon == Icon::Redo)
+                    flip = juce::AffineTransform::scale (-1.0f, 1.0f, b.getCentreX(), b.getCentreY());
+
+                shaft.applyTransform (flip);
+                head.applyTransform (flip);
+                g.strokePath (shaft, juce::PathStrokeType (st * 1.15f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+                g.fillPath (head);
                 break;
             }
         }
@@ -473,6 +485,31 @@ void ArtilodyLookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int w, int
     g.fillAll (Theme::panel);
     g.setColour (Theme::border);
     g.drawRect (0, 0, w, h, 1);
+}
+
+void ArtilodyLookAndFeel::drawMenuBarBackground (juce::Graphics& g, int w, int h, bool, juce::MenuBarComponent&)
+{
+    g.fillAll (Theme::panel);
+    g.setColour (Theme::border);
+    g.fillRect (0, h - 1, w, 1);
+}
+
+void ArtilodyLookAndFeel::drawMenuBarItem (juce::Graphics& g, int w, int h, int, const juce::String& text,
+                                           bool over, bool open, bool, juce::MenuBarComponent& bar)
+{
+    if (open || over)
+    {
+        g.setColour (open ? Theme::selection : Theme::panelAlt);
+        g.fillRoundedRectangle (juce::Rectangle<float> (2.0f, 3.0f, (float) w - 4.0f, (float) h - 6.0f), 5.0f);
+    }
+    g.setColour (open ? Theme::accentBlue : Theme::text);
+    g.setFont (getMenuBarFont (bar, 0, text));
+    g.drawFittedText (text, 0, 0, w, h, juce::Justification::centred, 1);
+}
+
+juce::Font ArtilodyLookAndFeel::getMenuBarFont (juce::MenuBarComponent&, int, const juce::String&)
+{
+    return Theme::uiFont (14.0f, 400);
 }
 
 void ArtilodyLookAndFeel::drawToggleButton (juce::Graphics& g, juce::ToggleButton& b, bool hi, bool)

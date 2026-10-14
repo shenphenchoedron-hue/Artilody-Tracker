@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(ArtilodyTracker VERSION 1.0.0 LANGUAGES C CXX)
+project(ArtilodyTracker VERSION 1.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -41,6 +41,7 @@ set(ARTILODY_SOURCES
     src/Theme.cpp
     src/BuiltinFX.cpp
     src/SoundFontInstrument.cpp
+    src/SampleInstrument.cpp
     src/StripProcessor.cpp
     src/AudioEngine.cpp
     src/PluginHost.cpp
@@ -74,6 +75,7 @@ target_compile_definitions(ArtilodyTracker PRIVATE
     JUCE_PLUGINHOST_LV2=0
     JUCE_USE_FLAC=1
     JUCE_USE_OGGVORBIS=1
+    JUCE_USE_MP3AUDIOFORMAT=1
     JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:ArtilodyTracker,JUCE_PRODUCT_NAME>"
     JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:ArtilodyTracker,JUCE_VERSION>"
     ARTILODY_VERSION="${PROJECT_VERSION}")

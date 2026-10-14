@@ -9,7 +9,7 @@ namespace artilody
 {
 
 class MainComponent final : public juce::Component,
-                            private juce::AsyncUpdater,
+                            public juce::MenuBarModel,
                             private juce::ChangeListener
 {
 public:
@@ -27,9 +27,17 @@ public:
     void newProject();
     void openProject();
     void saveProject (bool saveAs, std::function<void (bool)> done = {});
-    void exportWav();
+    void exportAudio();
+    void importAudioFile();
     void showAudioSettings();
-    void showMainMenu();
+    void renameSong();
+    void loadBuiltInSong (bool jazz);
+    void showKeyboardHelp();
+
+    // MenuBarModel
+    juce::StringArray getMenuBarNames() override;
+    juce::PopupMenu getMenuForIndex (int index, const juce::String& name) override;
+    void menuItemSelected (int itemId, int topLevelMenuIndex) override;
     void addTrack();
     void playSong (bool fromStart);
     void playPattern();
@@ -40,7 +48,6 @@ public:
     bool saveJazzDemo (const juce::File& projectFile, const juce::File& wavFile);
 
 private:
-    void handleAsyncUpdate() override;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
     void structureChanged();
     void patternChanged();
@@ -71,6 +78,13 @@ private:
 
     std::unique_ptr<juce::FileChooser> chooser;
     juce::File lastDirectory;
+    struct Updater final : public juce::AsyncUpdater
+    {
+        std::function<void()> callback;
+        void handleAsyncUpdate() override { if (callback) callback(); }
+    } structureUpdater;
+    juce::RecentlyOpenedFilesList recentFiles;
+    void addRecentFile (const juce::File&);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

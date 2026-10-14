@@ -695,13 +695,17 @@ bool AudioEngine::renderToFile (const juce::File& file, double rate, int bitDept
     }
     else
     {
-        juce::WavAudioFormat wav;
-        auto writer = wav.createWriterFor (stream, juce::AudioFormatWriterOptions{}.withSampleRate (rate)
-                                                                                 .withNumChannels (2)
-                                                                                 .withBitsPerSample (bitDepth));
+        std::unique_ptr<juce::AudioFormat> format;
+        if (file.hasFileExtension ("aif;aiff"))  format = std::make_unique<juce::AiffAudioFormat>();
+        else if (file.hasFileExtension ("flac")) format = std::make_unique<juce::FlacAudioFormat>();
+        else                                     format = std::make_unique<juce::WavAudioFormat>();
+
+        auto writer = format->createWriterFor (stream, juce::AudioFormatWriterOptions{}.withSampleRate (rate)
+                                                                                      .withNumChannels (2)
+                                                                                      .withBitsPerSample (bitDepth));
         if (writer == nullptr)
         {
-            error = "Could not create WAV writer";
+            error = "Could not create the audio file writer";
         }
         else
         {

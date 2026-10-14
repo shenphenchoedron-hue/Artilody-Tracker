@@ -11,6 +11,8 @@ MainComponent::MainComponent (juce::ApplicationProperties& props) : properties (
 
     auto* settings = properties.getUserSettings();
     lastDirectory = juce::File (settings->getValue ("lastDirectory", juce::File::getSpecialLocation (juce::File::userMusicDirectory).getFullPathName()));
+    recentFiles.setMaxNumberOfItems (10);
+    recentFiles.restoreFromString (settings->getValue ("recentFiles"));
     const auto sfOverride = settings->getValue ("defaultSoundFont");
     if (sfOverride.isNotEmpty())
         SoundFontFile::setDefaultOverride (juce::File (sfOverride));
@@ -23,7 +25,8 @@ MainComponent::MainComponent (juce::ApplicationProperties& props) : properties (
     SoundFontFile::getDefault();
 
     // context callbacks
-    ctx.onStructureChanged = [this] { triggerAsyncUpdate(); };
+    structureUpdater.callback = [this] { structureChanged(); };
+    ctx.onStructureChanged = [this] { structureUpdater.triggerAsyncUpdate(); };
     ctx.onPatternChanged = [this] { patternChanged(); };
     ctx.onShowAudioSettings = [this] { showAudioSettings(); };
     ctx.onSelectTrack = [this] (int t) { selectTrack (t); };
@@ -43,11 +46,6 @@ MainComponent::MainComponent (juce::ApplicationProperties& props) : properties (
     topBar.onStop = [this] { stopPlayback(); };
     topBar.onUndo = [this] { ctx.undo.undo(); trackArea.grid.repaint(); };
     topBar.onRedo = [this] { ctx.undo.redo(); trackArea.grid.repaint(); };
-    topBar.onPluginManager = [] { PluginHost::get().showPluginManager(); };
-    topBar.onAudioSettings = [this] { showAudioSettings(); };
-    topBar.onExport = [this] { exportWav(); };
-    topBar.onSave = [this] { saveProject (false); };
-    topBar.onMainMenu = [this] { showMainMenu(); };
     addAndMakeVisible (topBar);
 
     addAndMakeVisible (sequenceList);
@@ -134,7 +132,7 @@ MainComponent::MainComponent (juce::ApplicationProperties& props) : properties (
 
 MainComponent::~MainComponent()
 {
-    cancelPendingUpdate();
+    structureUpdater.cancelPendingUpdate();
     engine.stop();
     ctx.state.removeChangeListener (this);
     engine.removeChangeListener (this);
@@ -155,16 +153,11 @@ MainComponent::~MainComponent()
 }
 
 //==============================================================================
-void MainComponent::handleAsyncUpdate()
-{
-    structureChanged();
-}
-
 void MainComponent::changeListenerCallback (juce::ChangeBroadcaster* b)
 {
     if (b == &engine)
     {
-        triggerAsyncUpdate();
+        structureUpdater.triggerAsyncUpdate();
         return;
     }
     // editor state change
@@ -187,6 +180,7 @@ void MainComponent::structureChanged()
     resized();
     repaint();
     updateTitle();
+    menuItemsChanged();
 }
 
 void MainComponent::patternChanged()
@@ -338,7 +332,10 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         if (lower == 's') { saveProject (mods.isShiftDown()); return true; }
         if (lower == 'o') { openProject(); return true; }
         if (lower == 'n') { newProject(); return true; }
-        if (lower == 'e') { exportWav(); return true; }
+        if (lower == 'e') { exportAudio(); return true; }
+        if (lower == 'i') { importAudioFile(); return true; }
+        if (lower == 'q') { juce::JUCEApplication::getInstance()->systemRequestedQuit(); return true; }
+        if (lower == 'p') { PluginHost::get().showPluginManager(); return true; }
         if (lower == 'z' && ! mods.isShiftDown()) { ctx.undo.undo(); trackArea.grid.repaint(); return true; }
         if (lower == 'y' || (lower == 'z' && mods.isShiftDown())) { ctx.undo.redo(); trackArea.grid.repaint(); return true; }
         if (lower == 't') { addTrack(); return true; }
@@ -401,75 +398,260 @@ void MainComponent::showAudioSettings()
     o.launchAsync();
 }
 
-void MainComponent::showMainMenu()
+//==============================================================================
+namespace MenuIds
 {
-    juce::PopupMenu m;
-    m.addItem (1, "New project");
-    m.addItem (2, "Open project...");
-    m.addItem (3, "Save project");
-    m.addItem (4, "Save project as...");
-    m.addSeparator();
-    m.addItem (5, "Export song to WAV...");
-    m.addSeparator();
-    m.addItem (6, "Rename song...");
-    m.addItem (7, "Load demo song");
-    m.addItem (12, "Load jazz demo song");
-    m.addSeparator();
-    m.addItem (8, "Plug-in Manager (VST3 / AU / CLAP)...");
-    m.addItem (9, "Audio & MIDI settings...");
-    m.addItem (10, "Default SoundFont...");
-    m.addSeparator();
-    m.addItem (11, "About Artilody Tracker");
-
-    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&topBar), [this] (int r)
+    enum
     {
-        switch (r)
+        mi_newProject = 1, mi_openProject, mi_saveProject, mi_saveProjectAs, mi_importAudio, mi_exportAudio, mi_quit,
+        mi_demoSong, mi_jazzSong, mi_clearRecent,
+        mi_undo = 100, mi_redo, mi_cut, mi_copy, mi_paste, mi_del, mi_selectTrack, mi_transposeUp, mi_transposeDown, mi_octaveUp, mi_octaveDown, mi_interpolate, mi_editMode,
+        mi_playSong = 200, mi_playFromStart, mi_playPattern, mi_stop, mi_addTrack, mi_renameSong, mi_followPlayback,
+        mi_toggleMixer = 300, mi_collapseFx,
+        mi_pluginManager = 400,
+        mi_audioSettings = 500, mi_defaultSoundFont,
+        mi_keyboardHelp = 600, mi_about,
+        mi_recentBase = 1000
+    };
+}
+
+juce::StringArray MainComponent::getMenuBarNames()
+{
+    return { "File", "Edit", "Song", "View", "Plug-ins", "Options", "Help" };
+}
+
+juce::PopupMenu MainComponent::getMenuForIndex (int index, const juce::String&)
+{
+    using namespace MenuIds;
+    juce::PopupMenu m;
+    auto item = [&m] (int id, const juce::String& text, const juce::String& shortcut = {}, bool enabled = true, bool ticked = false)
+    {
+        juce::PopupMenu::Item i (text);
+        i.itemID = id;
+        i.isEnabled = enabled;
+        i.isTicked = ticked;
+        i.shortcutKeyDescription = shortcut;
+        m.addItem (i);
+    };
+
+    const juce::String cmd =
+       #if JUCE_MAC
+        juce::String (juce::CharPointer_UTF8 ("\xe2\x8c\x98"));
+       #else
+        "Ctrl+";
+       #endif
+
+    switch (index)
+    {
+        case 0:
         {
-            case 1: newProject(); break;
-            case 2: openProject(); break;
-            case 3: saveProject (false); break;
-            case 4: saveProject (true); break;
-            case 5: exportWav(); break;
-            case 6:
+            item (mi_newProject, "New Project", cmd + "N");
+            item (mi_openProject, "Open Project...", cmd + "O");
+            juce::PopupMenu recent;
+            recentFiles.createPopupMenuItems (recent, mi_recentBase, true, true);
+            if (recent.getNumItems() > 0)
             {
-                auto* aw = new juce::AlertWindow ("Rename song", "Song title:", juce::MessageBoxIconType::NoIcon);
-                aw->addTextEditor ("t", engine.song.title);
-                aw->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
-                aw->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
-                aw->enterModalState (true, juce::ModalCallbackFunction::create ([this, aw] (int res)
-                {
-                    if (res == 1 && aw->getTextEditorContents ("t").trim().isNotEmpty())
-                    {
-                        engine.song.title = aw->getTextEditorContents ("t").trim();
-                        ctx.state.dirty = true;
-                        updateTitle();
-                    }
-                }), true);
-                break;
+                recent.addSeparator();
+                recent.addItem (mi_clearRecent, "Clear list");
             }
-            case 7:
-                stopPlayback();
-                PluginHost::get().closeAllEditors();
-                ctx.undo.clearUndoHistory();
-                ProjectIO::createDemoSong (engine);
-                resetEditorState();
-                structureChanged();
-                break;
-            case 12:
-                stopPlayback();
-                PluginHost::get().closeAllEditors();
-                ctx.undo.clearUndoHistory();
-                ProjectIO::createJazzDemo (engine);
-                resetEditorState();
-                structureChanged();
-                break;
-            case 8: PluginHost::get().showPluginManager(); break;
-            case 9: showAudioSettings(); break;
-            case 10: chooseDefaultSoundFont(); break;
-            case 11: showAbout(); break;
-            default: break;
+            m.addSubMenu ("Open Recent Project", recent, recent.getNumItems() > 0);
+            m.addSeparator();
+            item (mi_saveProject, "Save Project", cmd + "S");
+            item (mi_saveProjectAs, "Save Project As...", cmd + "Shift+S");
+            m.addSeparator();
+            item (mi_importAudio, "Open Audio File as Instrument...", cmd + "I", engine.song.numTracks() > 0);
+            item (mi_exportAudio, "Export Song as Audio (WAV / AIFF / FLAC)...", cmd + "E");
+            m.addSeparator();
+            juce::PopupMenu demos;
+            demos.addItem (mi_demoSong, "Sunrise Circuits (pop / electro)");
+            demos.addItem (mi_jazzSong, "Blue Corner Swing (jazz)");
+            m.addSubMenu ("Demo Songs", demos);
+           #if ! JUCE_MAC
+            m.addSeparator();
+            item (mi_quit, "Quit", cmd + "Q");
+           #endif
+            break;
         }
-    });
+        case 1:
+            item (mi_undo, ctx.undo.canUndo() ? "Undo " + ctx.undo.getUndoDescription() : juce::String ("Undo"), cmd + "Z", ctx.undo.canUndo());
+            item (mi_redo, ctx.undo.canRedo() ? "Redo " + ctx.undo.getRedoDescription() : juce::String ("Redo"), cmd + "Y", ctx.undo.canRedo());
+            m.addSeparator();
+            item (mi_cut, "Cut", cmd + "X");
+            item (mi_copy, "Copy", cmd + "C");
+            item (mi_paste, "Paste", cmd + "V");
+            item (mi_del, "Delete", "Del");
+            item (mi_selectTrack, "Select Track Column", cmd + "A");
+            m.addSeparator();
+            item (mi_transposeUp, "Transpose +1", cmd + "Up");
+            item (mi_transposeDown, "Transpose -1", cmd + "Down");
+            item (mi_octaveUp, "Transpose +12", cmd + "Shift+Up");
+            item (mi_octaveDown, "Transpose -12", cmd + "Shift+Down");
+            item (mi_interpolate, "Interpolate Volume");
+            m.addSeparator();
+            item (mi_editMode, "Edit Mode", "Esc", true, ctx.state.editMode);
+            break;
+        case 2:
+            item (mi_playSong, "Play Song", "Space");
+            item (mi_playFromStart, "Play From Start");
+            item (mi_playPattern, "Loop Pattern", "Shift+Space");
+            item (mi_stop, "Stop", "Space", engine.isPlaying());
+            m.addSeparator();
+            item (mi_followPlayback, "Follow Playback", {}, true, ctx.state.followPlayback);
+            m.addSeparator();
+            item (mi_addTrack, "Add Track", cmd + "T");
+            item (mi_renameSong, "Rename Song...");
+            break;
+        case 3:
+            item (mi_toggleMixer, "Show Mixer", cmd + "M", true, ! ctx.state.mixerCollapsed);
+            item (mi_collapseFx, "Collapse / Expand All Plug-in Lists");
+            break;
+        case 4:
+            item (mi_pluginManager, "Plug-in Manager (scan VST3 / AU / CLAP)...", cmd + "P");
+            break;
+        case 5:
+            item (mi_audioSettings, "Audio & MIDI Settings...");
+            item (mi_defaultSoundFont, "Default SoundFont...");
+            break;
+        case 6:
+            item (mi_keyboardHelp, "Keyboard Shortcuts");
+            item (mi_about, "About Artilody Tracker");
+            break;
+        default: break;
+    }
+    return m;
+}
+
+void MainComponent::menuItemSelected (int id, int)
+{
+    using namespace MenuIds;
+    auto& grid = trackArea.grid;
+
+    if (id >= mi_recentBase && id < mi_recentBase + 100)
+    {
+        auto f = recentFiles.getFile (id - mi_recentBase);
+        auto doOpen = [this, f] { if (f.existsAsFile()) loadFile (f); };
+        if (! ctx.state.dirty) doOpen();
+        else juce::AlertWindow::showOkCancelBox (juce::MessageBoxIconType::QuestionIcon, "Open project", "Discard unsaved changes?", "Discard", "Cancel", nullptr,
+                                                 juce::ModalCallbackFunction::create ([doOpen] (int r) { if (r != 0) doOpen(); }));
+        return;
+    }
+
+    switch (id)
+    {
+        case mi_newProject:     newProject(); break;
+        case mi_openProject:    openProject(); break;
+        case mi_saveProject:    saveProject (false); break;
+        case mi_saveProjectAs:  saveProject (true); break;
+        case mi_importAudio:    importAudioFile(); break;
+        case mi_exportAudio:    exportAudio(); break;
+        case mi_quit:           juce::JUCEApplication::getInstance()->systemRequestedQuit(); break;
+        case mi_demoSong:       loadBuiltInSong (false); break;
+        case mi_jazzSong:       loadBuiltInSong (true); break;
+        case mi_clearRecent:    recentFiles.clear(); properties.getUserSettings()->setValue ("recentFiles", juce::String()); break;
+
+        case mi_undo:           ctx.undo.undo(); grid.repaint(); break;
+        case mi_redo:           ctx.undo.redo(); grid.repaint(); break;
+        case mi_cut:            grid.copySelection (true); break;
+        case mi_copy:           grid.copySelection (false); break;
+        case mi_paste:          grid.paste(); break;
+        case mi_del:            grid.deleteSelectionOrCell(); break;
+        case mi_selectTrack:    grid.selectAllInTrack(); break;
+        case mi_transposeUp:    grid.transpose (1); break;
+        case mi_transposeDown:  grid.transpose (-1); break;
+        case mi_octaveUp:       grid.transpose (12); break;
+        case mi_octaveDown:     grid.transpose (-12); break;
+        case mi_interpolate:    grid.interpolateVolumes(); break;
+        case mi_editMode:       ctx.state.editMode = ! ctx.state.editMode; ctx.state.changed(); break;
+
+        case mi_playSong:       playSong (false); break;
+        case mi_playFromStart:  playSong (true); break;
+        case mi_playPattern:    playPattern(); break;
+        case mi_stop:           stopPlayback(); break;
+        case mi_followPlayback: ctx.state.followPlayback = ! ctx.state.followPlayback; ctx.state.changed(); break;
+        case mi_addTrack:       addTrack(); break;
+        case mi_renameSong:     renameSong(); break;
+
+        case mi_toggleMixer:    mixerButton.triggerClick(); break;
+        case mi_collapseFx:     fxListsButton.triggerClick(); break;
+        case mi_pluginManager:  PluginHost::get().showPluginManager(); break;
+        case mi_audioSettings:  showAudioSettings(); break;
+        case mi_defaultSoundFont: chooseDefaultSoundFont(); break;
+        case mi_keyboardHelp:   showKeyboardHelp(); break;
+        case mi_about:          showAbout(); break;
+        default: break;
+    }
+}
+
+void MainComponent::renameSong()
+{
+    auto* aw = new juce::AlertWindow ("Rename song", "Song title:", juce::MessageBoxIconType::NoIcon);
+    aw->addTextEditor ("t", engine.song.title);
+    aw->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
+    aw->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    aw->enterModalState (true, juce::ModalCallbackFunction::create ([this, aw] (int res)
+    {
+        if (res == 1 && aw->getTextEditorContents ("t").trim().isNotEmpty())
+        {
+            engine.song.title = aw->getTextEditorContents ("t").trim();
+            ctx.state.dirty = true;
+            updateTitle();
+        }
+    }), true);
+}
+
+void MainComponent::loadBuiltInSong (bool jazz)
+{
+    auto doLoad = [this, jazz]
+    {
+        stopPlayback();
+        PluginHost::get().closeAllEditors();
+        ctx.undo.clearUndoHistory();
+        if (jazz) ProjectIO::createJazzDemo (engine);
+        else      ProjectIO::createDemoSong (engine);
+        resetEditorState();
+        structureChanged();
+    };
+    if (! ctx.state.dirty) { doLoad(); return; }
+    juce::AlertWindow::showOkCancelBox (juce::MessageBoxIconType::QuestionIcon, "Demo song", "Discard unsaved changes?", "Discard", "Cancel", nullptr,
+                                        juce::ModalCallbackFunction::create ([doLoad] (int r) { if (r != 0) doLoad(); }));
+}
+
+void MainComponent::showKeyboardHelp()
+{
+    juce::String t;
+    t << "Esc\tEdit mode on / off\n"
+      << "Space\tPlay / stop song\n"
+      << "Shift+Space\tLoop current pattern\n"
+      << "Enter\tPlay from cursor row\n"
+      << "Z..M, Q..P\tNotes (two octaves)\n"
+      << "A or 1\tNote off\n"
+      << "0-9, A-F\tHex values in Ins / Vol / FX\n"
+      << "Arrows, Tab, PgUp/PgDn, Home/End\tNavigation\n"
+      << "Shift+Arrows / mouse drag\tSelect\n"
+      << "Del / Ins / Backspace\tClear, insert row, delete row\n"
+      << "Ctrl+C / X / V\tCopy, cut, paste\n"
+      << "Ctrl+Z / Y\tUndo / redo\n"
+      << "Ctrl+Up / Down (+Shift)\tTranspose semitone (octave)\n"
+      << "Num * / Num /, F1 / F2\tOctave up / down\n"
+      << "Ctrl+N / O / S / E / I\tNew, open, save, export audio, open audio file\n"
+      << "Ctrl+T / M / P\tAdd track, mixer, plug-in manager\n\n"
+      << "Effects: Txx tempo, Lxx lines per beat, Dxx delay, Cxx cut,\n"
+      << "Rxy retrigger, Pxx pitch bend, Mxx modulation, Bxx jump.";
+    juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Keyboard Shortcuts", t.replace ("\t", "  -  "));
+}
+
+void MainComponent::addRecentFile (const juce::File& f)
+{
+    recentFiles.addFile (f);
+    properties.getUserSettings()->setValue ("recentFiles", recentFiles.toString());
+    menuItemsChanged();
+}
+
+void MainComponent::importAudioFile()
+{
+    if (engine.song.numTracks() == 0) return;
+    if (auto* strip = trackArea.getStripComponent (ctx.state.cursorTrack))
+        strip->chooseAudioSample();
 }
 
 void MainComponent::showAbout()
@@ -542,6 +724,7 @@ void MainComponent::loadFile (const juce::File& f)
         juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Open project", err);
 
     lastDirectory = f.getParentDirectory();
+    addRecentFile (f);
     const bool collapsed = ctx.state.mixerCollapsed;
     ctx.state.currentFile = f;
     ctx.state.seqSlot = 0;
@@ -586,6 +769,7 @@ void MainComponent::saveProject (bool saveAs, std::function<void (bool)> done)
         ctx.state.currentFile = f;
         ctx.state.dirty = false;
         lastDirectory = f.getParentDirectory();
+        addRecentFile (f);
         updateTitle();
         if (done) done (true);
     };
@@ -602,16 +786,17 @@ void MainComponent::saveProject (bool saveAs, std::function<void (bool)> done)
                           [writeTo] (const juce::FileChooser& fc) { writeTo (fc.getResult()); });
 }
 
-void MainComponent::exportWav()
+void MainComponent::exportAudio()
 {
     auto initial = lastDirectory.getChildFile (juce::File::createLegalFileName (engine.song.title) + ".wav");
-    chooser = std::make_unique<juce::FileChooser> ("Export song to WAV", initial, "*.wav");
+    chooser = std::make_unique<juce::FileChooser> ("Export song as audio (WAV / AIFF / FLAC)", initial, "*.wav;*.aiff;*.aif;*.flac");
     chooser->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles | juce::FileBrowserComponent::warnAboutOverwriting,
                           [this] (const juce::FileChooser& fc)
     {
         auto f = fc.getResult();
         if (f == juce::File()) return;
-        f = f.withFileExtension (".wav");
+        if (! f.hasFileExtension ("wav;aif;aiff;flac"))
+            f = f.withFileExtension (".wav");
         stopPlayback();
 
         struct ExportJob final : public juce::ThreadWithProgressWindow

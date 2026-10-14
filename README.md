@@ -33,7 +33,9 @@ oprettes der automatisk en channel strip **lige under tracket**, som styrer det.
 4. **Panorering**
 5. **Lydstyrke** (fader med meter), mute og solo
 
-Projekter gemmes som `.artilody` (inkl. plug-in-tilstand) og sange kan eksporteres til WAV.
+Appen har en almindelig menulinje (File, Edit, Song, View, Plug-ins, Options, Help).
+Projekter gemmes som `.artilody` (inkl. plug-in-tilstand), sange kan eksporteres som WAV, AIFF eller FLAC,
+og en lydfil (WAV/AIFF/FLAC/OGG/MP3) kan åbnes som sampler-instrument på det valgte track.
 
 ![Mixer collapsed](docs/screenshot-mixer-collapsed.png)
 
@@ -58,7 +60,9 @@ Windows installer, macOS DMG samt `.deb`-pakker til Debian 12, Ubuntu 22.04 og U
 | `Ctrl+C/X/V`, `Ctrl+Z/Y` | Udklipsholder, fortryd |
 | `Ctrl+↑/↓` (`+Shift` = oktav) | Transponér |
 | `Num *` / `Num /`, `F1`/`F2` | Oktav op / ned |
-| `Ctrl+S/O/N/E/T/M` | Gem, åbn, ny, eksporter, nyt track, mixer |
+| `Ctrl+N/O/S`, `Ctrl+Shift+S` | Nyt projekt, åbn, gem, gem som |
+| `Ctrl+I` / `Ctrl+E` | Åbn lydfil som instrument / eksporter lyd |
+| `Ctrl+T/M/P/Q` | Nyt track, mixer, plug-in manager, afslut |
 
 ## Byg selv
 
@@ -80,7 +84,7 @@ cd build && cpack -G DEB   # Linux-pakke
 ```
 
 Uden den medfølgende SoundFont bruger appen en system-SoundFont (fx `/usr/share/sounds/sf2/FluidR3_GM.sf2`),
-eller du kan vælge en under *Menu → Default SoundFont*.
+eller du kan vælge en under *Options → Default SoundFont*.
 
 ## Licens
 
