@@ -34,7 +34,7 @@ oprettes der automatisk en channel strip **lige under tracket**, som styrer det.
 5. **Lydstyrke** (fader med meter), mute og solo
 
 Appen har en almindelig menulinje (File, Edit, Song, View, Plug-ins, Options, Help).
-Projekter gemmes som `.artixml` – almindelig XML, inkl. plug-in-tilstand (ældre `.artilody`-filer kan stadig åbnes), sange kan eksporteres som WAV, AIFF eller FLAC,
+Projekter gemmes som `.artixml` – almindelig XML, inkl. plug-in-tilstand, sange kan eksporteres som WAV, AIFF eller FLAC,
 og en lydfil (WAV/AIFF/FLAC/OGG/MP3) kan åbnes som sampler-instrument på det valgte track.
 
 ![Mixer collapsed](docs/screenshot-mixer-collapsed.png)
